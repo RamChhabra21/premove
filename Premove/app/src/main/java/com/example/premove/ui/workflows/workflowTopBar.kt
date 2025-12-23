@@ -1,45 +1,53 @@
 package com.example.premove.ui.workflows
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
+import com.example.premove.ui.utility.SearchBar
 
 @Composable
 fun WorkflowTopBar(
     searchQuery: String,
-    onSearchQueryChange: (String) -> Unit,
-    onAddWorkflow: () -> Unit
+    onSearchQueryChange: (String) -> Unit
 ){
+    var isSearchBarOpen by remember { mutableStateOf(false) }
     Row() {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = {
-                onSearchQueryChange(it)
-            },
-            placeholder = { Text("search workflow") },
-            singleLine = true,
-            modifier = Modifier.weight(4f)
-        )
-        Spacer(
-            modifier = Modifier.width(10.dp)
-        )
-        IconButton(
-            modifier = Modifier.weight(1f),
-            onClick = {
-                onAddWorkflow()
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add")
+            Text("Premove")
+            if(!isSearchBarOpen) {
+                IconButton(
+                    onClick = {
+                        isSearchBarOpen = true
+                    }
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = "Add")
+                }
+            }
+            else{
+                SearchBar(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = onSearchQueryChange,
+                    onClose = {
+                        isSearchBarOpen = false
+                    }
+                )
+            }
         }
     }
-
 }

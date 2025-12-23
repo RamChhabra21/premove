@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.premove.model.WorkflowEntity
+import com.example.premove.ui.utility.DialogBox
 
 @Composable
 fun DeleteDialog(
@@ -26,43 +27,9 @@ fun DeleteDialog(
     handleDeleteWorkFlow: () -> Unit,
     handleCloseDialog: () -> Unit
 ){
-
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.50f))
-            .clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ) {
-                handleCloseDialog()
-            },
-        contentAlignment = Alignment.Center
-    ){
-        Box(
-            Modifier.size(200.dp)
-                .clip(RoundedCornerShape(5.dp))
-                .background(Color.White)
-                .padding(20.dp),
-            contentAlignment = Alignment.Center
-        ){
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    modifier = Modifier.padding(bottom=5.dp),
-                    text = "Confirm Deletion"
-                )
-                Text(" ${selectedWorkflow.title}")
-                Button(
-                    onClick = {
-                        handleDeleteWorkFlow()
-                    },
-                    modifier=Modifier.padding(top=5.dp)
-                ) {
-                    Text("Delete")
-                }
-            }
-        }
-    }
+    DialogBox(
+        text = "Are you sure you want to delete ${selectedWorkflow.title}?",
+        onclickfunc = handleDeleteWorkFlow,
+        handleCloseDialog = handleCloseDialog
+    )
 }

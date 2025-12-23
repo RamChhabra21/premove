@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
@@ -31,12 +32,12 @@ fun WorkflowCard(
     var checked by remember { mutableStateOf(true) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(10.dp).clickable(onClick = { /* open workflow */ }),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ){
         Column(){
             Text(text = workflow.title,
                 modifier = Modifier.padding(bottom = 5.dp)
-
             )
             Text(text = workflow.description)
         }
