@@ -10,8 +10,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkflowDao{
-    @Query("SELECT * FROM workflows")
+    @Query("Select * from workflows")
     fun getAllWorkflows(): Flow<List<WorkflowEntity>>
+
+    @Query("Select * from workflows where id=:workflowId")
+    fun getWorkflowById(workflowId: String): Flow<WorkflowEntity>
 
     @Insert
     suspend fun insertWorkflow(workflow: WorkflowEntity)
@@ -19,6 +22,9 @@ interface WorkflowDao{
     @Update
     suspend fun updateWorkflow(workflow: WorkflowEntity)
 
-    @Delete
-    suspend fun deleteWorkflow(workflowId: WorkflowEntity)
+    @Query("Delete from workflows where id = :workflowId")
+    suspend fun deleteWorkflowById(workflowId: String)
+
+    @Query("Update workflows set isEnabled = not isEnabled where id = :workflowId")
+    suspend fun toggleWorkflow(workflowId: String)
 }

@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.premove.model.WorkflowEntity
 
-@Database(entities = [WorkflowEntity::class], version = 1, exportSchema = false)
+@Database(entities = [WorkflowEntity::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase(){
     abstract fun WorkflowDao(): WorkflowDao
 
@@ -20,7 +20,8 @@ abstract class AppDatabase : RoomDatabase(){
                     context.applicationContext,
                     AppDatabase::class.java,
                     "premover_db"
-                ).build()
+                ).fallbackToDestructiveMigration(true)
+                    .build()
                 INSTANCE = instance
                 instance
             }

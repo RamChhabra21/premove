@@ -17,8 +17,9 @@ import com.example.premove.model.WorkflowEntity
 @Composable
 fun WorkflowList(
     filteredWorkflows: List<WorkflowEntity>,
-    toggleWorkflow: (WorkflowEntity) -> Unit,
-    onDeleteClicked: (Int) -> Unit
+    toggleWorkflow: (String) -> Unit,
+    onDeleteClicked: (String) -> Unit,
+    onWorkflowClick: (String) -> Unit
 ){
     LazyColumn {
         itemsIndexed(
@@ -29,7 +30,8 @@ fun WorkflowList(
                 Spacer(Modifier.height(10.dp))
                 WorkflowCard(
                     workflow,
-                    toggleWorkflow = { toggleWorkflow(workflow) },
+                    onTap = onWorkflowClick,
+                    toggleWorkflow = { toggleWorkflow(workflow.id) },
                     onDeleteWorkflow = {
                         onDeleteClicked(workflow.id)
                     })

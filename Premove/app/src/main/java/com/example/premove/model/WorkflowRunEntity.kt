@@ -1,24 +1,17 @@
 package com.example.premove.model
+
 import androidx.room.ColumnInfo
-import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "workflows")
-data class WorkflowEntity(
-    @PrimaryKey()
+data class WorkflowRunEntity(
+    @PrimaryKey(autoGenerate = true)
     val id: String,
 
     @ColumnInfo
-    val title: String,
+    val workflowId: String,
 
     @ColumnInfo
-    val description: String,
-
-    @ColumnInfo
-    val isEnabled: Boolean,
-
-    @ColumnInfo
-    val createdBy: Int,
+    val status: String,
 
     @ColumnInfo
     val createdAt: Long = System.currentTimeMillis(),

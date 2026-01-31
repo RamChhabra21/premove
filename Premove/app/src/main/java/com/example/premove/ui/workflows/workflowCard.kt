@@ -26,12 +26,16 @@ import com.example.premove.model.WorkflowEntity
 @Composable
 fun WorkflowCard(
     workflow: WorkflowEntity,
+    onTap: (String) -> Unit,
     toggleWorkflow: (WorkflowEntity) -> Unit,
     onDeleteWorkflow: () -> Unit,
  ){
     var checked by remember { mutableStateOf(true) }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(10.dp).clickable(onClick = { /* open workflow */ }),
+        modifier = Modifier.fillMaxWidth().padding(10.dp).clickable(onClick = {
+            /* open workflow */
+            onTap(workflow.id)
+        }),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ){

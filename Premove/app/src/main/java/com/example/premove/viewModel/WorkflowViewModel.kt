@@ -1,9 +1,8 @@
 package com.example.premove.viewModel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.premove.data.local.AppDatabase
+import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.model.WorkflowEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -12,17 +11,20 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import dagger.hilt.android.lifecycle.HiltViewModel
+import com.github.f4b6a3.uuid.UuidCreator
 
-class WorkflowViewModel(application: Application) : AndroidViewModel(application) {
-    private val dao =
-        AppDatabase.getDatabase(application).WorkflowDao()
-
+@HiltViewModel
+class WorkflowViewModel @Inject constructor(
+    private val workflowRepository: WorkflowRepository
+) : ViewModel(){
     val searchQuery = MutableStateFlow("")
 
-    private val _selectedDeleteWorkflowId = MutableStateFlow<Int?>(null)
-    val selectedDeleteWorkflowId: StateFlow<Int?> = _selectedDeleteWorkflowId
+    private val _selectedDeleteWorkflowId = MutableStateFlow<String?>(null)
+    val selectedDeleteWorkflowId: StateFlow<String?> = _selectedDeleteWorkflowId
 
-    val workflows = dao.getAllWorkflows().stateIn(
+    val workflows = workflowRepository.getAllWorkflows().stateIn(
         viewModelScope,
         SharingStarted.Lazily,
         emptyList()
@@ -39,22 +41,22 @@ class WorkflowViewModel(application: Application) : AndroidViewModel(application
             initialValue = emptyList()
         )
 
-
+    // workflow crud
     fun addWorkflow(title: String, description: String, isEnabled: Boolean, createdBy: Int) = viewModelScope.launch {
-        dao.insertWorkflow(WorkflowEntity( title = title, description = description, isEnabled = isEnabled, createdBy = createdBy))
+        workflowRepository.insertWorkflow(WorkflowEntity(id = UuidCreator.getTimeOrdered().toString(), title = title, description = description, isEnabled = isEnabled, createdBy = createdBy))
     }
 
-    fun updateWorkflow(id: Int, title: String, description: String, isEnabled: Boolean, createdBy: Int) = viewModelScope.launch{
-        dao.updateWorkflow(WorkflowEntity(id = id, title = title, description = description, isEnabled = isEnabled, createdBy = createdBy))
+    fun updateWorkflow(id: String, title: String, description: String, isEnabled: Boolean, createdBy: Int) = viewModelScope.launch{
+        workflowRepository.updateWorkflow(WorkflowEntity(id = id, title = title, description = description, isEnabled = isEnabled, createdBy = createdBy))
     }
 
-    fun deleteWorkflow(workflowEntity: WorkflowEntity) = viewModelScope.launch{
-        dao.deleteWorkflow(workflowEntity)
+    fun deleteWorkflow(workflowId: String) = viewModelScope.launch{
+        workflowRepository.deleteWorkflow(workflowId)
     }
 
-    fun toggleWorkflow(workflowEntity: WorkflowEntity) {
+    fun toggleWorkflow(workflowId: String) {
         viewModelScope.launch {
-            dao.updateWorkflow(workflowEntity.copy(isEnabled = !workflowEntity.isEnabled))
+            workflowRepository.toggleWorkflow(workflowId)
         }
     }
 
@@ -62,7 +64,7 @@ class WorkflowViewModel(application: Application) : AndroidViewModel(application
         searchQuery.value = query
     }
 
-    fun onDeleteClicked(id: Int){
+    fun onDeleteClicked(id: String){
         _selectedDeleteWorkflowId.value = id
     }
 
