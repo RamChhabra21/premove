@@ -24,7 +24,7 @@ import com.example.premove.ui.workflows.DeleteDialog
 import com.example.premove.ui.workflows.WorkflowList
 import com.example.premove.ui.workflows.WorkflowTopBar
 import com.example.premove.viewModel.WorkflowViewModel
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable

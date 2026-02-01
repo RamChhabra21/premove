@@ -29,9 +29,9 @@ fun InteractiveDottedCanvas(workflowId: String) {
             .fillMaxSize()
             .pointerInput(workflowId) {
                 detectTransformGestures { centroid, pan, zoomChange, _ ->
-                    zoom *= zoomChange
-                    val newZoom = zoom.coerceIn(0.3f, 5f)
+                    val newZoom = (zoom * zoomChange).coerceIn(0.3f, 5f)
                     offset = (offset + pan - centroid) * (newZoom/zoom) + centroid
+                    zoom = newZoom
                 }
             }
             .drawBehind {
