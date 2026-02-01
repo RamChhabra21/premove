@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
-import com.example.premove.ui.utility.SearchBar
+import com.example.premove.ui.utility.WorkflowSearchBar
 
 @Composable
 fun WorkflowTopBar(
@@ -40,7 +40,7 @@ fun WorkflowTopBar(
                 }
             }
             else{
-                SearchBar(
+                WorkflowSearchBar(
                     searchQuery = searchQuery,
                     onSearchQueryChange = onSearchQueryChange,
                     onClose = {
