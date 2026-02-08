@@ -1,9 +1,9 @@
 package com.example.premove.data.repository
 
-import android.content.Context
-import com.example.premove.data.local.AppDatabase
-import com.example.premove.data.local.NodeDao
-import com.example.premove.model.NodeEntity
+import androidx.compose.ui.geometry.Offset
+import com.example.premove.data.local.dao.NodeDao
+import com.example.premove.data.local.entity.NodeEntity
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class NodeRepository @Inject constructor(
@@ -16,12 +16,21 @@ class NodeRepository @Inject constructor(
         dao.getNodeById(nodeId)
     }
 
+    suspend fun getNodesByWorkflowId(workflowId: String) :  Flow<List<NodeEntity>> {
+        return dao.getNodesByWorkflowId(workflowId)
+    }
+
     suspend fun insertNode(node: NodeEntity) {
         dao.insertNode(node)
     }
 
     suspend fun updateNode(node: NodeEntity){
         dao.updateNode(node)
+    }
+
+    // update node position
+    suspend fun updateNodePosition(nodeId: Int, newPos : Offset){
+        dao.updateNodePosition(nodeId, newPos.x, newPos.y)
     }
 
     suspend fun deleteNode(nodeId: String){

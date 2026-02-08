@@ -1,4 +1,4 @@
-package com.example.premove.model
+package com.example.premove.data.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

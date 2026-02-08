@@ -20,7 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
-import com.example.premove.model.WorkflowEntity
+import com.example.premove.data.local.entity.WorkflowEntity
 
 
 @Composable

@@ -1,9 +1,7 @@
 package com.example.premove.data.repository
 
-import android.content.Context
-import com.example.premove.data.local.AppDatabase
-import com.example.premove.data.local.WorkflowDao
-import com.example.premove.model.WorkflowEntity
+import com.example.premove.data.local.dao.WorkflowDao
+import com.example.premove.data.local.entity.WorkflowEntity
 import javax.inject.Inject
 
 class WorkflowRepository @Inject constructor(

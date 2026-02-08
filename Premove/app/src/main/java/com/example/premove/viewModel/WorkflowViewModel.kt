@@ -3,7 +3,7 @@ package com.example.premove.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.premove.data.repository.WorkflowRepository
-import com.example.premove.model.WorkflowEntity
+import com.example.premove.data.local.entity.WorkflowEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
