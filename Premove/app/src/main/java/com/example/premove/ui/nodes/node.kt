@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.premove.domain.model.NodeLayoutType
-import com.example.premove.domain.model.PortType
+import com.example.premove.ui.workflows.PortType
 
 @Composable
 fun Node(
@@ -46,11 +46,9 @@ fun Node(
     isSelected: Boolean = false,
     onClick: () -> Unit = {},
     onPositionChange: (Offset) -> Unit = {},
-    // Edge creation callbacks
-    onEdgeDragStart: (sourceNodeId: Int, startPosition: Offset) -> Unit = { _, _ -> },
+    onEdgeDragStart: (sourceNodeId: Int, startPosition: Offset, portType: PortType) -> Unit = { _, _, _ -> },
     onEdgeDrag: (currentPosition: Offset) -> Unit = {},
     onEdgeDragEnd: (targetNodeId: Int?, endPosition: Offset) -> Unit = { _, _ -> },
-    // For detecting if drag ended on this node's input
     isValidDropTarget: Boolean = false
 ) {
     var currentPosition by remember(id) { mutableStateOf(position) }
@@ -67,16 +65,6 @@ fun Node(
         Box(
             modifier = Modifier
                 .size(width = size, height = size * 0.6f)
-                .pointerInput(id) {
-                    detectDragGestures(
-                        onDragStart = { onClick() },
-                        onDrag = { change, dragAmount ->
-                            change.consume()
-                            currentPosition += dragAmount
-                        },
-                        onDragEnd = { onPositionChange(currentPosition) }
-                    )
-                }
                 .shadow(
                     elevation = if (isSelected) 8.dp else 4.dp,
                     shape = RoundedCornerShape(12.dp)
@@ -94,7 +82,18 @@ fun Node(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .pointerInput(id) {
+                            detectDragGestures(
+                                onDragStart = { onClick() },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    currentPosition += dragAmount
+                                },
+                                onDragEnd = { onPositionChange(currentPosition) }
+                            )
+                        },
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -103,20 +102,6 @@ fun Node(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(
-                                color = when (type) {
-                                    "trigger", "Trigger" -> Color(0xFF4CAF50)
-                                    "action", "Action" -> Color(0xFF2196F3)
-                                    "condition", "Condition" -> Color(0xFFFFC107)
-                                    "end", "End" -> Color(0xFFF44336)
-                                    else -> Color.Gray
-                                },
-                                shape = CircleShape
-                            )
                     )
                 }
                 Text(
@@ -133,11 +118,33 @@ fun Node(
 
         when (layoutType) {
             NodeLayoutType.HORIZONTAL -> {
-                // INPUT port (left) - highlight if valid drop target
+                // INPUT port (left) - DRAGGABLE
                 Box(
                     modifier = Modifier
                         .offset(x = -(portSize / 2), y = nodeHeight / 2 - portSize / 2)
                         .size(portSize)
+                        .pointerInput("input_$id") {
+                            detectDragGestures(
+                                onDragStart = {
+                                    val portWorldPos = Offset(
+                                        currentPosition.x,
+                                        currentPosition.y + (nodeHeight / 2).toPx()
+                                    )
+                                    onEdgeDragStart(id, portWorldPos, PortType.INPUT)
+                                },
+                                onDrag = { change, _ ->
+                                    change.consume()
+                                    val worldPos = Offset(
+                                        currentPosition.x + change.position.x,
+                                        currentPosition.y + change.position.y
+                                    )
+                                    onEdgeDrag(worldPos)
+                                },
+                                onDragEnd = {
+                                    onEdgeDragEnd(null, Offset.Zero)
+                                }
+                            )
+                        }
                         .background(
                             color = if (isValidDropTarget) Color(0xFF66BB6A) else Color(0xFF4CAF50),
                             shape = CircleShape
@@ -149,23 +156,22 @@ fun Node(
                         )
                 )
 
-                // OUTPUT port (right) - draggable to create edges
+                // OUTPUT port (right) - DRAGGABLE
                 Box(
                     modifier = Modifier
                         .offset(x = size - portSize / 2, y = nodeHeight / 2 - portSize / 2)
                         .size(portSize)
                         .pointerInput("output_$id") {
                             detectDragGestures(
-                                onDragStart = { offset ->
+                                onDragStart = {
                                     val portWorldPos = Offset(
                                         currentPosition.x + size.toPx(),
                                         currentPosition.y + (nodeHeight / 2).toPx()
                                     )
-                                    onEdgeDragStart(id, portWorldPos)
+                                    onEdgeDragStart(id, portWorldPos, PortType.OUTPUT)
                                 },
                                 onDrag = { change, _ ->
                                     change.consume()
-                                    // Convert to world coordinates
                                     val worldPos = Offset(
                                         currentPosition.x + change.position.x,
                                         currentPosition.y + change.position.y
@@ -173,7 +179,6 @@ fun Node(
                                     onEdgeDrag(worldPos)
                                 },
                                 onDragEnd = {
-                                    // Parent will check if ended on valid input and pass targetNodeId
                                     onEdgeDragEnd(null, Offset.Zero)
                                 }
                             )
@@ -184,11 +189,33 @@ fun Node(
             }
 
             NodeLayoutType.VERTICAL -> {
-                // INPUT port (top)
+                // INPUT port (top) - DRAGGABLE
                 Box(
                     modifier = Modifier
                         .offset(x = size / 2 - portSize / 2, y = -(portSize / 2))
                         .size(portSize)
+                        .pointerInput("input_$id") {
+                            detectDragGestures(
+                                onDragStart = {
+                                    val portWorldPos = Offset(
+                                        currentPosition.x + (size / 2).toPx(),
+                                        currentPosition.y
+                                    )
+                                    onEdgeDragStart(id, portWorldPos, PortType.INPUT)
+                                },
+                                onDrag = { change, _ ->
+                                    change.consume()
+                                    val worldPos = Offset(
+                                        currentPosition.x + change.position.x,
+                                        currentPosition.y + change.position.y
+                                    )
+                                    onEdgeDrag(worldPos)
+                                },
+                                onDragEnd = {
+                                    onEdgeDragEnd(null, Offset.Zero)
+                                }
+                            )
+                        }
                         .background(
                             color = if (isValidDropTarget) Color(0xFF66BB6A) else Color(0xFF4CAF50),
                             shape = CircleShape
@@ -200,19 +227,19 @@ fun Node(
                         )
                 )
 
-                // OUTPUT port (bottom)
+                // OUTPUT port (bottom) - DRAGGABLE
                 Box(
                     modifier = Modifier
                         .offset(x = size / 2 - portSize / 2, y = nodeHeight - portSize / 2)
                         .size(portSize)
                         .pointerInput("output_$id") {
                             detectDragGestures(
-                                onDragStart = { offset ->
+                                onDragStart = {
                                     val portWorldPos = Offset(
                                         currentPosition.x + (size / 2).toPx(),
                                         currentPosition.y + nodeHeight.toPx()
                                     )
-                                    onEdgeDragStart(id, portWorldPos)
+                                    onEdgeDragStart(id, portWorldPos, PortType.OUTPUT)
                                 },
                                 onDrag = { change, _ ->
                                     change.consume()
