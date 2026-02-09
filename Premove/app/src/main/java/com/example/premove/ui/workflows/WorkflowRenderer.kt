@@ -34,7 +34,10 @@ fun WorkflowRenderer(workflowId: String) {
 
     val dbNodes by workflowEditorViewModel.nodes.collectAsState()
     var localNodes by workflowEditorViewModel.localNodes
-//    val edges by workflowEditorViewModel.edges.collectAsState()
+    val localEdges by workflowEditorViewModel.localEdges
+    val dbEdges by workflowEditorViewModel.edges.collectAsState()
+
+
 
     // Edge dragging state
     var edgeDragState by remember { mutableStateOf<EdgeDragState?>(null) }
@@ -56,16 +59,16 @@ fun WorkflowRenderer(workflowId: String) {
         // Draw existing edges and temporary edge
         Canvas(modifier = Modifier.fillMaxSize()) {
             // Draw existing edges
-//            edges.forEach { edge: EdgeEntity ->
-//                val sourceNode = localNodes.find { it.id.toString() == edge.sourceNodeId }
-//                val targetNode = localNodes.find { it.id.toString() == edge.targetNodeId }
-//
-//                if (sourceNode != null && targetNode != null) {
-//                    val startPos = getOutputPortPosition(sourceNode)
-//                    val endPos = getInputPortPosition(targetNode)
-//                    drawBezierEdge(startPos, endPos, Color(0xFF2196F3))
-//                }
-//            }
+            localEdges.forEach { edge: EdgeEntity ->
+                val sourceNode = localNodes.find { it.id.toString() == edge.sourceNodeId }
+                val targetNode = localNodes.find { it.id.toString() == edge.targetNodeId }
+
+                if (sourceNode != null && targetNode != null) {
+                    val startPos = getOutputPortPosition(sourceNode)
+                    val endPos = getInputPortPosition(targetNode)
+                    drawBezierEdge(startPos, endPos, Color(0xFF2196F3))
+                }
+            }
 
             // Draw temporary edge while dragging
             edgeDragState?.let { state ->

@@ -10,4 +10,7 @@ import kotlinx.coroutines.flow.Flow
 interface EdgeDao {
     @Insert
     suspend fun insertEdge(edge: EdgeEntity)
+
+    @Query("SELECT * FROM EdgeEntity WHERE workflowId = :workflowId")
+    fun getEdgesByWorkflowId(workflowId: String): Flow<List<EdgeEntity>>
 }

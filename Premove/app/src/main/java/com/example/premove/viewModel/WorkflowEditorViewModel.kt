@@ -1,5 +1,6 @@
 package com.example.premove.viewModel
 
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
@@ -44,7 +45,20 @@ class WorkflowEditorViewModel @Inject constructor(
             emptyList()
         )
 
+    val edges: StateFlow<List<EdgeEntity>> = _workflowId
+        .filterNotNull()
+        .flatMapLatest {
+            _workflowId ->
+            edgeRepository.getEdgesByWorkflowId(_workflowId)
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyList()
+        )
     var localNodes = mutableStateOf<List<NodeData>>(emptyList())
+    var localEdges = mutableStateOf<List<EdgeEntity>>(emptyList())
+
     private val positionUpdateJobs = mutableMapOf<Int, Job>()
 
     fun createEdge(edge: EdgeEntity) {

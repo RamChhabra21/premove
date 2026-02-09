@@ -1,9 +1,8 @@
 package com.example.premove.data.repository
 
 import com.example.premove.data.local.dao.EdgeDao
-import com.example.premove.data.local.dao.NodeDao
 import com.example.premove.data.local.entity.EdgeEntity
-import com.example.premove.data.local.entity.NodeEntity
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class EdgeRepository @Inject constructor(
@@ -11,5 +10,9 @@ class EdgeRepository @Inject constructor(
 ) {
     suspend fun insertEdge(edge: EdgeEntity) {
         dao.insertEdge(edge)
+    }
+
+    suspend fun getEdgesByWorkflowId(workflowId: String) :  Flow<List<EdgeEntity>> {
+        return dao.getEdgesByWorkflowId(workflowId)
     }
 }
