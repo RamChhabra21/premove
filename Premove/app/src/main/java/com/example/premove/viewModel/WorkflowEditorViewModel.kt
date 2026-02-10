@@ -67,6 +67,14 @@ class WorkflowEditorViewModel @Inject constructor(
         }
     }
 
+    fun updateEdge(edge: EdgeEntity) {
+        viewModelScope.launch {
+            edgeRepository.updateEdge(
+                edge
+            )
+        }
+    }
+
     fun setWorkflowId(workflowId: String){
         _workflowId.value = workflowId
     }

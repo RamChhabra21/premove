@@ -49,7 +49,8 @@ fun Node(
     onEdgeDragStart: (sourceNodeId: Int, startPosition: Offset, portType: PortType) -> Unit = { _, _, _ -> },
     onEdgeDrag: (currentPosition: Offset) -> Unit = {},
     onEdgeDragEnd: (targetNodeId: Int?, endPosition: Offset) -> Unit = { _, _ -> },
-    isValidDropTarget: Boolean = false
+    isValidInputDropTarget: Boolean = false,
+    isValidOutputDropTarget: Boolean = false
 ) {
     var currentPosition by remember(id) { mutableStateOf(position) }
 
@@ -124,21 +125,19 @@ fun Node(
                         .offset(x = -(portSize / 2), y = nodeHeight / 2 - portSize / 2)
                         .size(portSize)
                         .pointerInput("input_$id") {
+                            var dragPosition=Offset.Zero
                             detectDragGestures(
                                 onDragStart = {
-                                    val portWorldPos = Offset(
+                                    dragPosition = Offset(
                                         currentPosition.x,
                                         currentPosition.y + (nodeHeight / 2).toPx()
                                     )
-                                    onEdgeDragStart(id, portWorldPos, PortType.INPUT)
+                                    onEdgeDragStart(id, dragPosition, PortType.INPUT)
                                 },
-                                onDrag = { change, _ ->
+                                onDrag = { change, dragAmount ->
                                     change.consume()
-                                    val worldPos = Offset(
-                                        currentPosition.x + change.position.x,
-                                        currentPosition.y + change.position.y
-                                    )
-                                    onEdgeDrag(worldPos)
+                                    dragPosition += dragAmount
+                                    onEdgeDrag(dragPosition)
                                 },
                                 onDragEnd = {
                                     onEdgeDragEnd(null, Offset.Zero)
@@ -146,12 +145,12 @@ fun Node(
                             )
                         }
                         .background(
-                            color = if (isValidDropTarget) Color(0xFF66BB6A) else Color(0xFF4CAF50),
+                            color = if (isValidInputDropTarget) Color(0xFF66BB6A) else Color(0xFF4CAF50),
                             shape = CircleShape
                         )
                         .border(
-                            width = if (isValidDropTarget) 3.dp else 2.dp,
-                            color = if (isValidDropTarget) Color(0xFF1B5E20) else Color.White,
+                            width = if (isValidInputDropTarget) 3.dp else 2.dp,
+                            color = if (isValidInputDropTarget) Color(0xFF1B5E20) else Color.White,
                             shape = CircleShape
                         )
                 )
@@ -162,29 +161,34 @@ fun Node(
                         .offset(x = size - portSize / 2, y = nodeHeight / 2 - portSize / 2)
                         .size(portSize)
                         .pointerInput("output_$id") {
+                            var dragPosition=Offset.Zero
                             detectDragGestures(
                                 onDragStart = {
-                                    val portWorldPos = Offset(
+                                    dragPosition = Offset(
                                         currentPosition.x + size.toPx(),
                                         currentPosition.y + (nodeHeight / 2).toPx()
                                     )
-                                    onEdgeDragStart(id, portWorldPos, PortType.OUTPUT)
+                                    onEdgeDragStart(id, dragPosition, PortType.OUTPUT)
                                 },
-                                onDrag = { change, _ ->
+                                onDrag = { change, dragAmount ->
                                     change.consume()
-                                    val worldPos = Offset(
-                                        currentPosition.x + change.position.x,
-                                        currentPosition.y + change.position.y
-                                    )
-                                    onEdgeDrag(worldPos)
+                                    dragPosition += dragAmount
+                                    onEdgeDrag(dragPosition)
                                 },
                                 onDragEnd = {
                                     onEdgeDragEnd(null, Offset.Zero)
                                 }
                             )
                         }
-                        .background(Color(0xFF2196F3), CircleShape)
-                        .border(2.dp, Color.White, CircleShape)
+                    .background(
+                        color = if (isValidOutputDropTarget) Color(0xFF1565C0) else Color(0xFF2196F3),
+                        shape = CircleShape
+                    )
+                    .border(
+                        width = if (isValidOutputDropTarget) 3.dp else 2.dp,
+                        color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color.White,
+                        shape = CircleShape
+                    )
                 )
             }
 
@@ -195,21 +199,19 @@ fun Node(
                         .offset(x = size / 2 - portSize / 2, y = -(portSize / 2))
                         .size(portSize)
                         .pointerInput("input_$id") {
+                            var dragPosition=Offset.Zero
                             detectDragGestures(
                                 onDragStart = {
-                                    val portWorldPos = Offset(
+                                    dragPosition = Offset(
                                         currentPosition.x + (size / 2).toPx(),
                                         currentPosition.y
                                     )
-                                    onEdgeDragStart(id, portWorldPos, PortType.INPUT)
+                                    onEdgeDragStart(id, dragPosition, PortType.INPUT)
                                 },
-                                onDrag = { change, _ ->
+                                onDrag = { change, dragAmount ->
                                     change.consume()
-                                    val worldPos = Offset(
-                                        currentPosition.x + change.position.x,
-                                        currentPosition.y + change.position.y
-                                    )
-                                    onEdgeDrag(worldPos)
+                                    dragPosition += dragAmount
+                                    onEdgeDrag(dragPosition)
                                 },
                                 onDragEnd = {
                                     onEdgeDragEnd(null, Offset.Zero)
@@ -217,12 +219,12 @@ fun Node(
                             )
                         }
                         .background(
-                            color = if (isValidDropTarget) Color(0xFF66BB6A) else Color(0xFF4CAF50),
+                            color = if (isValidInputDropTarget) Color(0xFF66BB6A) else Color(0xFF4CAF50),
                             shape = CircleShape
                         )
                         .border(
-                            width = if (isValidDropTarget) 3.dp else 2.dp,
-                            color = if (isValidDropTarget) Color(0xFF1B5E20) else Color.White,
+                            width = if (isValidInputDropTarget) 3.dp else 2.dp,
+                            color = if (isValidInputDropTarget) Color(0xFF1B5E20) else Color.White,
                             shape = CircleShape
                         )
                 )
@@ -233,29 +235,34 @@ fun Node(
                         .offset(x = size / 2 - portSize / 2, y = nodeHeight - portSize / 2)
                         .size(portSize)
                         .pointerInput("output_$id") {
+                            var dragPosition=Offset.Zero
                             detectDragGestures(
                                 onDragStart = {
-                                    val portWorldPos = Offset(
+                                    dragPosition = Offset(
                                         currentPosition.x + (size / 2).toPx(),
                                         currentPosition.y + nodeHeight.toPx()
                                     )
-                                    onEdgeDragStart(id, portWorldPos, PortType.OUTPUT)
+                                    onEdgeDragStart(id, dragPosition, PortType.OUTPUT)
                                 },
-                                onDrag = { change, _ ->
+                                onDrag = { change, dragAmount ->
                                     change.consume()
-                                    val worldPos = Offset(
-                                        currentPosition.x + change.position.x,
-                                        currentPosition.y + change.position.y
-                                    )
-                                    onEdgeDrag(worldPos)
+                                    dragPosition += dragAmount
+                                    onEdgeDrag(dragPosition)
                                 },
                                 onDragEnd = {
                                     onEdgeDragEnd(null, Offset.Zero)
                                 }
                             )
                         }
-                        .background(Color(0xFF2196F3), CircleShape)
-                        .border(2.dp, Color.White, CircleShape)
+                    .background(
+                        color = if (isValidOutputDropTarget) Color(0xFF1565C0) else Color(0xFF2196F3),
+                        shape = CircleShape
+                    )
+                    .border(
+                        width = if (isValidOutputDropTarget) 3.dp else 2.dp,
+                        color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color.White,
+                        shape = CircleShape
+                    )
                 )
             }
         }

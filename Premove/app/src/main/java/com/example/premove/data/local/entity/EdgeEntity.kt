@@ -17,4 +17,10 @@ data class EdgeEntity (
 
     @ColumnInfo
     var targetNodeId: String,
+
+    @ColumnInfo
+    val bendX: Float = 0f,  // default 0 = handle at midpoint
+
+    @ColumnInfo
+    val bendY: Float = 0f   // default 0 = handle at midpoint
 )

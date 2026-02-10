@@ -1,8 +1,14 @@
 package com.example.premove.ui.workflows
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -22,6 +28,10 @@ import com.example.premove.ui.nodes.Node
 import com.example.premove.viewModel.WorkflowEditorViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import java.util.UUID
 import kotlin.math.atan2
 import kotlin.math.pow
@@ -65,6 +75,7 @@ fun WorkflowRenderer(workflowId: String) {
 
     var edgeDragState by remember { mutableStateOf<EdgeDragState?>(null) }
     var selectedNodeId by remember { mutableStateOf<Int?>(null) }
+    val density = LocalDensity.current
 
     LaunchedEffect(dbNodes) {
         localNodes = dbNodes.map { node ->
@@ -84,7 +95,9 @@ fun WorkflowRenderer(workflowId: String) {
                 id = edge.id,
                 workflowId = edge.workflowId,
                 sourceNodeId = edge.sourceNodeId,
-                targetNodeId = edge.targetNodeId
+                targetNodeId = edge.targetNodeId,
+                bendX = edge.bendX,
+                bendY = edge.bendY
             )
         }
     }
@@ -92,40 +105,80 @@ fun WorkflowRenderer(workflowId: String) {
     Box(modifier = Modifier.fillMaxSize()) {
         // Draw existing edges and temporary edge
         Canvas(modifier = Modifier.fillMaxSize()) {
-            // Draw existing edges
             localEdges.forEach { edge: EdgeEntity ->
                 val sourceNode = localNodes.find { it.id.toString() == edge.sourceNodeId }
                 val targetNode = localNodes.find { it.id.toString() == edge.targetNodeId }
 
                 if (sourceNode != null && targetNode != null) {
-                    val startPos = getOutputPortPosition(sourceNode)
-                    val endPos = getInputPortPosition(targetNode)
-                    drawDirectedEdge(startPos, endPos)
+                    val startPos = getOutputPortPosition(sourceNode, density.density)
+                    val endPos = getInputPortPosition(targetNode, density.density)
+                    drawDirectedEdge(startPos, endPos, edge.bendX, edge.bendY)
                 }
             }
 
-            // Draw temporary edge while dragging
             edgeDragState?.let { state ->
-                drawDirectedEdge(
-                    state.startPosition,
-                    state.currentPosition,
-                    isDashed = true
+                drawDirectedEdge(state.startPosition, state.currentPosition, isDashed = true)
+            }
+        }
+
+        // Bend handles
+        localEdges.forEach { edge ->
+            val sourceNode = localNodes.find { it.id.toString() == edge.sourceNodeId }
+            val targetNode = localNodes.find { it.id.toString() == edge.targetNodeId }
+
+            if (sourceNode != null && targetNode != null) {
+                val startPos = getOutputPortPosition(sourceNode, density.density)
+                val endPos = getInputPortPosition(targetNode, density.density)
+
+                val handleX = (startPos.x + endPos.x) / 2 + edge.bendX
+                val handleY = (startPos.y + endPos.y) / 2 + edge.bendY
+
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(handleX.toInt(), handleY.toInt()) }
+                        .size(9.dp)
+                        .pointerInput(edge.id) {
+                            detectDragGestures(
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    localEdges = localEdges.map {
+                                        if (it.id == edge.id) it.copy(
+                                            bendX = it.bendX + dragAmount.x,
+                                            bendY = it.bendY + dragAmount.y
+                                        ) else it
+                                    }
+                                },
+                                onDragEnd = {
+                                    val updatedEdge = localEdges.find { it.id == edge.id }
+                                    if (updatedEdge != null) {
+                                        println("updateEdge : $updatedEdge")
+                                        workflowEditorViewModel.updateEdge(
+                                            updatedEdge
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                        .background(Color.Gray.copy(alpha = 0.5f), CircleShape)
+                        .border(1.dp, Color.Gray, CircleShape)
                 )
             }
         }
 
         // Render all nodes
         localNodes.forEach { node ->
-            val isValidDropTarget = edgeDragState?.let { state ->
-                if (state.sourceNodeId == node.id) {
-                    false // Can't connect to self
-                } else if (state.portType == PortType.OUTPUT) {
-                    // Dragging from output, can drop on input
-                    isNearPort(state.currentPosition, getInputPortPosition(node))
-                } else {
-                    // Dragging from input, can drop on output
-                    isNearPort(state.currentPosition, getOutputPortPosition(node))
-                }
+            val isValidInputDropTarget = edgeDragState?.let { state ->
+                if (state.sourceNodeId == node.id) false
+                else if (state.portType == PortType.OUTPUT) {
+                    isNearPort(state.currentPosition, getInputPortPosition(node, density.density))
+                } else false
+            } ?: false
+
+            val isValidOutputDropTarget = edgeDragState?.let { state ->
+                if (state.sourceNodeId == node.id) false
+                else if (state.portType == PortType.INPUT) {
+                    isNearPort(state.currentPosition, getOutputPortPosition(node, density.density))
+                } else false
             } ?: false
 
             Node(
@@ -135,7 +188,8 @@ fun WorkflowRenderer(workflowId: String) {
                 type = node.type,
                 layoutType = node.layoutType,
                 isSelected = selectedNodeId == node.id,
-                isValidDropTarget = isValidDropTarget,
+                isValidInputDropTarget = isValidInputDropTarget,
+                isValidOutputDropTarget = isValidOutputDropTarget,
                 onClick = {
                     selectedNodeId = node.id
                 },
@@ -159,32 +213,22 @@ fun WorkflowRenderer(workflowId: String) {
                 },
                 onEdgeDragEnd = { _, _ ->
                     edgeDragState?.let { state ->
-                        // Find target node based on which port type we're dragging from
                         val targetNode = localNodes.find { targetNode ->
                             if (targetNode.id == state.sourceNodeId) {
-                                false  // Can't connect to self
+                                false
                             } else if (state.portType == PortType.OUTPUT) {
-                                // We're dragging FROM output, so check if we're near ANY input port
-                                isNearPort(state.currentPosition, getInputPortPosition(targetNode))
+                                isNearPort(state.currentPosition, getInputPortPosition(targetNode, density.density))
                             } else {
-                                // We're dragging FROM input, so check if we're near ANY output port
-                                isNearPort(state.currentPosition, getOutputPortPosition(targetNode))
+                                isNearPort(state.currentPosition, getOutputPortPosition(targetNode, density.density))
                             }
                         }
 
-                        println("target node :  ${targetNode?.id}")
-
                         if (targetNode != null) {
-                            // Determine correct source/target based on which port we dragged from
                             val (sourceId, targetId) = if (state.portType == PortType.OUTPUT) {
-                                // Dragged from output → source is drag node, target is drop node
                                 state.sourceNodeId.toString() to targetNode.id.toString()
                             } else {
-                                // Dragged from input → source is drop node, target is drag node
                                 targetNode.id.toString() to state.sourceNodeId.toString()
                             }
-
-                            println("edge is here")
 
                             workflowEditorViewModel.createEdge(
                                 EdgeEntity(
@@ -204,27 +248,33 @@ fun WorkflowRenderer(workflowId: String) {
 }
 
 // Helper functions
-private fun getOutputPortPosition(node: NodeData): Offset {
+
+// Update the helper functions
+private fun getOutputPortPosition(node: NodeData, density: Float): Offset {
+    val sizePx = 120 * density
+    val nodeHeightPx = sizePx * 0.6f
     return when (node.layoutType) {
         NodeLayoutType.HORIZONTAL -> Offset(
-            node.position.x + 120,
-            node.position.y + 36
+            node.position.x + sizePx,
+            node.position.y + nodeHeightPx / 2
         )
         NodeLayoutType.VERTICAL -> Offset(
-            node.position.x + 60,
-            node.position.y + 72
+            node.position.x + sizePx / 2,
+            node.position.y + nodeHeightPx
         )
     }
 }
 
-private fun getInputPortPosition(node: NodeData): Offset {
+private fun getInputPortPosition(node: NodeData, density: Float): Offset {
+    val sizePx = 120 * density
+    val nodeHeightPx = sizePx * 0.6f
     return when (node.layoutType) {
         NodeLayoutType.HORIZONTAL -> Offset(
             node.position.x,
-            node.position.y + 36
+            node.position.y + nodeHeightPx / 2
         )
         NodeLayoutType.VERTICAL -> Offset(
-            node.position.x + 60,
+            node.position.x + sizePx / 2,
             node.position.y
         )
     }
@@ -237,33 +287,35 @@ private fun isNearPort(dragPos: Offset, portPos: Offset, threshold: Float = 30f)
     return distance < threshold
 }
 
-// Bold black directed edge with arrow
+// CHANGE 1: drawDirectedEdge now accepts bendX, bendY
 private fun DrawScope.drawDirectedEdge(
     start: Offset,
     end: Offset,
+    bendX: Float = 0f,
+    bendY: Float = 0f,
     isDashed: Boolean = false
 ) {
-    val arrowSize = 12f
+    val arrowSize = 30f
     val arrowOffset = 8f
     val strokeWidth = 4f
     val color = Color.Black
 
-    // Calculate direction for arrow
     val dx = end.x - start.x
     val dy = end.y - start.y
     val distance = sqrt(dx * dx + dy * dy)
 
-    // Adjust end point to leave space for arrow
     val adjustedEnd = Offset(
         end.x - (dx / distance) * arrowOffset,
         end.y - (dy / distance) * arrowOffset
     )
 
-    // Draw bezier curve
     val offset = (distance * 0.4f).coerceIn(40f, 200f)
 
-    val controlPoint1 = Offset(start.x + offset, start.y)
-    val controlPoint2 = Offset(adjustedEnd.x - offset, adjustedEnd.y)
+    // CHANGE 2: direction-aware control points + bend offset
+    val nx = (dx / distance) * offset
+    val ny = (dy / distance) * offset
+    val controlPoint1 = Offset(start.x + nx + bendX * 0.5f, start.y + ny + bendY * 0.5f)
+    val controlPoint2 = Offset(adjustedEnd.x - nx + bendX * 0.5f, adjustedEnd.y - ny + bendY * 0.5f)
 
     val path = Path().apply {
         moveTo(start.x, start.y)
@@ -274,24 +326,28 @@ private fun DrawScope.drawDirectedEdge(
         )
     }
 
-    drawPath(
-        path = path,
-        color = color,
-        style = Stroke(width = strokeWidth)
-    )
+    drawPath(path = path, color = color, style = Stroke(width = strokeWidth))
 
-    // Draw arrow (only if not dashed)
     if (!isDashed) {
-        val angle = atan2(dy, dx) * 180f / Math.PI.toFloat()
+        val nearEnd = bezierPoint(0.99f, start, controlPoint1, controlPoint2, adjustedEnd)
+        val angle = atan2(adjustedEnd.y - nearEnd.y, adjustedEnd.x - nearEnd.x) * 180f / Math.PI.toFloat()
 
-        rotate(angle, end) {
+        rotate(angle, pivot = adjustedEnd) {
             val arrowPath = Path().apply {
-                moveTo(end.x, end.y)
-                lineTo(end.x - arrowSize, end.y - arrowSize * 0.5f)
-                lineTo(end.x - arrowSize, end.y + arrowSize * 0.5f)
+                moveTo(adjustedEnd.x - arrowSize, adjustedEnd.y - arrowSize * 0.5f)
+                lineTo(adjustedEnd.x, adjustedEnd.y)
+                lineTo(adjustedEnd.x - arrowSize, adjustedEnd.y + arrowSize * 0.5f)
                 close()
             }
             drawPath(arrowPath, color)
         }
     }
+}
+
+private fun bezierPoint(t: Float, p0: Offset, p1: Offset, p2: Offset, p3: Offset): Offset {
+    val mt = 1 - t
+    return Offset(
+        mt*mt*mt*p0.x + 3*mt*mt*t*p1.x + 3*mt*t*t*p2.x + t*t*t*p3.x,
+        mt*mt*mt*p0.y + 3*mt*mt*t*p1.y + 3*mt*t*t*p2.y + t*t*t*p3.y
+    )
 }

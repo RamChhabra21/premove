@@ -11,7 +11,7 @@ import com.example.premove.data.local.entity.EdgeEntity
 import com.example.premove.data.local.entity.NodeEntity
 import com.example.premove.data.local.entity.WorkflowEntity
 
-@Database(entities = [WorkflowEntity::class, NodeEntity::class, EdgeEntity::class], version = 5, exportSchema = false)
+@Database(entities = [WorkflowEntity::class, NodeEntity::class, EdgeEntity::class], version = 6, exportSchema = false)
 abstract class AppDatabase : RoomDatabase(){
     abstract fun WorkflowDao(): WorkflowDao
 

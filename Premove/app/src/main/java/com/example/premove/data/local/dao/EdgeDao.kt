@@ -3,6 +3,7 @@ package com.example.premove.data.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.example.premove.data.local.entity.EdgeEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -13,4 +14,7 @@ interface EdgeDao {
 
     @Query("SELECT * FROM EdgeEntity WHERE workflowId = :workflowId")
     fun getEdgesByWorkflowId(workflowId: String): Flow<List<EdgeEntity>>
+
+    @Update
+    suspend fun updateEdge(edge: EdgeEntity)
 }

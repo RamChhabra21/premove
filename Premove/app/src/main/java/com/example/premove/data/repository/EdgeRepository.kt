@@ -15,4 +15,8 @@ class EdgeRepository @Inject constructor(
     suspend fun getEdgesByWorkflowId(workflowId: String) :  Flow<List<EdgeEntity>> {
         return dao.getEdgesByWorkflowId(workflowId)
     }
+
+    suspend fun updateEdge(edge: EdgeEntity) {
+        dao.updateEdge(edge)
+    }
 }
