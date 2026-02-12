@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.example.premove.ui.workflows.WorkflowEditor
 import com.example.premove.ui.home.Home
+import com.example.premove.ui.nodes.NodeEditor
 
 fun NavGraphBuilder.workflowNavGraph(
     navController: NavController
@@ -19,13 +20,28 @@ fun NavGraphBuilder.workflowNavGraph(
     }
 
     composable(
-        route = Route.WorkflowEditor.route + "/{id}"
+        route = Route.WorkflowEditor.route + "/{workflowId}"
     ) { backStackEntry ->
-        val id = backStackEntry.arguments
-            ?.getString("id")
+        val workflowId = backStackEntry.arguments
+            ?.getString("workflowId")
 
-        requireNotNull(id) { "Workflow id is required" }
+        requireNotNull(workflowId) { "Workflow id is required" }
 
-        WorkflowEditor(id)
+        WorkflowEditor(workflowId, onNodeClick = {
+            nodeId ->
+            navController.navigate(Route.NodeEditor.route + "/$nodeId")
+        })
+    }
+
+    composable(
+        route = Route.NodeEditor.route + "/{nodeId}"
+    ) {
+            backStackEntry ->
+        val nodeId = backStackEntry.arguments
+            ?.getInt("nodeId")
+
+        requireNotNull(nodeId) { "Node id is required" }
+
+        NodeEditor(nodeId)
     }
 }

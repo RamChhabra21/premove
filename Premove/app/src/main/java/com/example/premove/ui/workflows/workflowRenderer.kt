@@ -61,7 +61,10 @@ data class EdgeData(
 )
 
 @Composable
-fun WorkflowRenderer(workflowId: String) {
+fun WorkflowRenderer(
+    workflowId: String,
+    onNodeClick: (Int) -> Unit
+) {
     val workflowEditorViewModel: WorkflowEditorViewModel = hiltViewModel()
 
     LaunchedEffect(workflowId) {
@@ -130,12 +133,29 @@ fun WorkflowRenderer(workflowId: String) {
                 val startPos = getOutputPortPosition(sourceNode, density.density)
                 val endPos = getInputPortPosition(targetNode, density.density)
 
-                val handleX = (startPos.x + endPos.x) / 2 + edge.bendX
-                val handleY = (startPos.y + endPos.y) / 2 + edge.bendY
+//                val handleX = (startPos.x + endPos.x) / 2 + edge.bendX
+//                val handleY = (startPos.y + endPos.y) / 2 + edge.bendY
+
+                       // Calculate actual curve position
+                       val dx = endPos.x - startPos.x
+                       val dy = endPos.y - startPos.y
+                       val distance = sqrt(dx * dx + dy * dy)
+                       val offset = (distance * 0.4f).coerceIn(40f, 200f)
+                       val nx = (dx / distance) * offset
+                       val ny = (dy / distance) * offset
+
+                       val controlPoint1 = Offset(startPos.x + nx + edge.bendX * 0.5f, startPos.y + ny + edge.bendY * 0.5f)
+                       val controlPoint2 = Offset(endPos.x - nx + edge.bendX * 0.5f, endPos.y - ny + edge.bendY * 0.5f)
+
+                       // Get point at t=0.5 on the actual bezier curve
+                      val handlePos = bezierPoint(0.5f, startPos, controlPoint1, controlPoint2, endPos)
+
+                val bendSensitivity = 2f
 
                 Box(
                     modifier = Modifier
-                        .offset { IntOffset(handleX.toInt(), handleY.toInt()) }
+                        .offset { IntOffset((handlePos.x - 4.5.dp.toPx()).toInt(), (handlePos.y - 4.5.dp.toPx()).toInt()) }
+                        .size(9.dp)
                         .size(9.dp)
                         .pointerInput(edge.id) {
                             detectDragGestures(
@@ -143,8 +163,8 @@ fun WorkflowRenderer(workflowId: String) {
                                     change.consume()
                                     localEdges = localEdges.map {
                                         if (it.id == edge.id) it.copy(
-                                            bendX = it.bendX + dragAmount.x,
-                                            bendY = it.bendY + dragAmount.y
+                                            bendX = it.bendX + dragAmount.x * bendSensitivity,
+                                            bendY = it.bendY + dragAmount.y * bendSensitivity
                                         ) else it
                                     }
                                 },
@@ -192,6 +212,8 @@ fun WorkflowRenderer(workflowId: String) {
                 isValidOutputDropTarget = isValidOutputDropTarget,
                 onClick = {
                     selectedNodeId = node.id
+                    // open another page to configure node
+                    onNodeClick(node.id)
                 },
                 onPositionChange = { newPosition ->
                     localNodes = localNodes.map {

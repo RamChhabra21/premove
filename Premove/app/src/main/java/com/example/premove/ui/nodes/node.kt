@@ -3,6 +3,7 @@ package com.example.premove.ui.nodes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,13 +87,18 @@ fun Node(
                     modifier = Modifier
                         .fillMaxWidth()
                         .pointerInput(id) {
+                            detectTapGestures(
+                                onTap = { onClick() }
+                            )
+                        }
+                        .pointerInput(id) {
                             detectDragGestures(
-                                onDragStart = { onClick() },
                                 onDrag = { change, dragAmount ->
                                     change.consume()
                                     currentPosition += dragAmount
+                                    onPositionChange(currentPosition)
                                 },
-                                onDragEnd = { onPositionChange(currentPosition) }
+                                onDragEnd = {  }
                             )
                         },
                     horizontalArrangement = Arrangement.SpaceBetween,

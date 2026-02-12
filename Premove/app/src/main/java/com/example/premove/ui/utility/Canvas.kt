@@ -20,7 +20,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import com.example.premove.ui.workflows.WorkflowRenderer
 
 @Composable
-fun InteractiveDottedCanvas(workflowId: String) {
+fun InteractiveDottedCanvas(
+    workflowId: String,
+    onNodeClick: (Int) -> Unit
+) {
     var offset by remember { mutableStateOf(Offset.Zero) }
     var zoom by remember { mutableFloatStateOf(1f) }
 
@@ -71,7 +74,10 @@ fun InteractiveDottedCanvas(workflowId: String) {
                     transformOrigin = TransformOrigin(0f, 0f) // Scale from top-left
                 }
         ) {
-            WorkflowRenderer(workflowId)
+            WorkflowRenderer(
+                workflowId,
+                onNodeClick
+            )
         }
     }
 }

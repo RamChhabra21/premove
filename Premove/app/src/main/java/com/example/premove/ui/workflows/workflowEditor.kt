@@ -26,7 +26,10 @@ import com.example.premove.viewModel.WorkflowEditorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkflowEditor(workflowId: String) {
+fun WorkflowEditor(
+    workflowId: String,
+    onNodeClick: (Int) -> Unit
+) {
     var offset by remember { mutableStateOf(Offset(0f, 0f)) }
     val workflowEditorViewModel: WorkflowEditorViewModel = hiltViewModel()
     workflowEditorViewModel.setWorkflowId(workflowId)
@@ -68,7 +71,7 @@ fun WorkflowEditor(workflowId: String) {
                 .padding(paddingValues) // respect top bar
                 .padding(10.dp),       // additional padding
         ) {
-            InteractiveDottedCanvas(workflowId)
+            InteractiveDottedCanvas(workflowId, onNodeClick)
         }
     }
 }
