@@ -17,7 +17,6 @@ import com.example.premove.data.local.entity.WorkflowEntity
 fun WorkflowList(
     filteredWorkflows: List<WorkflowEntity>,
     toggleWorkflow: (String) -> Unit,
-    onDeleteClicked: (String) -> Unit,
     onWorkflowClick: (String) -> Unit
 ){
     LazyColumn {
@@ -30,10 +29,8 @@ fun WorkflowList(
                 WorkflowCard(
                     workflow,
                     onTap = onWorkflowClick,
-                    toggleWorkflow = { toggleWorkflow(workflow.id) },
-                    onDeleteWorkflow = {
-                        onDeleteClicked(workflow.id)
-                    })
+                    toggleWorkflow = { toggleWorkflow(workflow.id) }
+                )
                 if (index < filteredWorkflows.lastIndex)
                     Divider(
                         color = Color.Gray.copy(alpha = 0.3f),

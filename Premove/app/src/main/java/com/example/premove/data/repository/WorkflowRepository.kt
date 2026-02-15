@@ -10,8 +10,8 @@ class WorkflowRepository @Inject constructor(
 
     fun getAllWorkflows() = dao.getAllWorkflows()
 
-    suspend fun getWorkflowById(workflowId: String) {
-        dao.getWorkflowById(workflowId)
+    suspend fun getWorkflowById(workflowId: String): WorkflowEntity{
+        return dao.getWorkflowById(workflowId)
     }
 
     suspend fun insertWorkflow(workflow: WorkflowEntity) {

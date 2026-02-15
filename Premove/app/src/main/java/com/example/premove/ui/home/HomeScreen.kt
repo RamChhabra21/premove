@@ -33,8 +33,6 @@ fun Home(
 ){
     val workflowViewModel: WorkflowViewModel =  hiltViewModel()
     val filteredWorkflows by workflowViewModel.filteredWorkflows.collectAsState()
-    val selectedDeleteWorkflowId: String? by workflowViewModel.selectedDeleteWorkflowId.collectAsState(initial = null)
-    val selectedDeleteWorkflow = selectedDeleteWorkflowId?.let { id -> filteredWorkflows.find { it.id == id } }
     val searchQuery by workflowViewModel.searchQuery.collectAsState()
     var isAddWorkflowDialogOpen by remember { mutableStateOf(false) }
 
@@ -77,23 +75,10 @@ fun Home(
                 WorkflowList(
                     filteredWorkflows = filteredWorkflows,
                     toggleWorkflow = workflowViewModel::toggleWorkflow,
-                    onDeleteClicked = workflowViewModel::onDeleteClicked,
                     onWorkflowClick = onWorkflowClick
                 )
             }
         }
-    }
-
-    // todo :  this needs to move to workflow page
-    selectedDeleteWorkflow?.let { workflow ->
-        DeleteDialog(
-            selectedWorkflow = workflow,
-            onConfirmDelete = {
-                workflowViewModel.deleteWorkflow(workflow.id)
-                workflowViewModel.onDeleteDialogDismissed()
-            },
-            onDismiss = workflowViewModel::onDeleteDialogDismissed
-        )
     }
 
     if (isAddWorkflowDialogOpen) {

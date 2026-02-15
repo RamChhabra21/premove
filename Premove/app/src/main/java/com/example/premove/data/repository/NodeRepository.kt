@@ -12,8 +12,8 @@ class NodeRepository @Inject constructor(
 
     fun getAllNodes() = dao.getAllNodes()
 
-    suspend fun getNodeById(nodeId: String) {
-        dao.getNodeById(nodeId)
+    suspend fun getNodeById(nodeId: String): NodeEntity? {
+        return dao.getNodeById(nodeId)
     }
 
     suspend fun getNodesByWorkflowId(workflowId: String) :  Flow<List<NodeEntity>> {
@@ -26,6 +26,10 @@ class NodeRepository @Inject constructor(
 
     suspend fun updateNode(node: NodeEntity){
         dao.updateNode(node)
+    }
+
+    suspend fun updateNodeConfig(nodeId: Int, title: String, type: String, configJson: String){
+        dao.updateNodeConfig(nodeId, title, type, configJson)
     }
 
     // update node position

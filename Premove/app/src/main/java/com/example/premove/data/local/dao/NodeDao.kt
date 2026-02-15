@@ -16,13 +16,16 @@ interface NodeDao{
     fun getNodesByWorkflowId(workflowId: String): Flow<List<NodeEntity>>
 
     @Query("Select * from nodes where id=:nodeId")
-    fun getNodeById(nodeId: String): Flow<NodeEntity>
+    suspend fun getNodeById(nodeId: String): NodeEntity?
 
     @Insert
     suspend fun insertNode(node: NodeEntity)
 
     @Update
     suspend fun updateNode(node: NodeEntity)
+
+    @Query(value = "UPDATE nodes SET title = :title,type = :type, configJson = :configJson WHERE id = :nodeId")
+    suspend fun updateNodeConfig(nodeId: Int, title: String, type: String, configJson: String)
 
     @Query(value = "Update nodes set x = :x, y = :y where id = :nodeId")
     suspend fun updateNodePosition(nodeId: Int, x: Float, y: Float)

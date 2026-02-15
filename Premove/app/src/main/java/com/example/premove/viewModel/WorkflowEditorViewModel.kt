@@ -1,6 +1,5 @@
 package com.example.premove.viewModel
 
-import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.ViewModel
@@ -9,6 +8,7 @@ import com.example.premove.data.local.entity.EdgeEntity
 import com.example.premove.data.repository.NodeRepository
 import com.example.premove.data.local.entity.NodeEntity
 import com.example.premove.data.repository.EdgeRepository
+import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.domain.model.NodeLayoutType
 import com.example.premove.ui.workflows.NodeData
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,12 +21,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkflowEditorViewModel @Inject constructor(
+    private val workflowRepository: WorkflowRepository,
     private val nodeRepository: NodeRepository,
     private val edgeRepository: EdgeRepository
 ) : ViewModel(){
@@ -60,6 +64,10 @@ class WorkflowEditorViewModel @Inject constructor(
     var localEdges = mutableStateOf<List<EdgeEntity>>(emptyList())
 
     private val positionUpdateJobs = mutableMapOf<Int, Job>()
+
+    fun deleteWorkflow(workflowId: String) = viewModelScope.launch{
+        workflowRepository.deleteWorkflow(workflowId)
+    }
 
     fun createEdge(edge: EdgeEntity) {
         viewModelScope.launch {
@@ -108,6 +116,101 @@ class WorkflowEditorViewModel @Inject constructor(
         positionUpdateJobs[nodeId] = viewModelScope.launch {
             delay(delayMs)
             nodeRepository.updateNodePosition(nodeId, newPosition)
+        }
+    }
+
+    // ===== NodeEditor specific methods =====
+
+    /**
+     * Get node for editor - returns default node for new (-1) or loaded node for existing
+     */
+    suspend fun getNodeForEditor(nodeId: Int): NodeEntity {
+        return withContext(Dispatchers.IO) {
+            if (nodeId == -1) {
+                // Return default new node
+                NodeEntity(
+                    id = 0, // Room will auto-generate on insert
+                    workflowId = _workflowId.value ?: "",
+                    title = "New Node",
+                    type = "WEB_AGENT", // Default type
+                    x = 0f,
+                    y = 0f,
+                    layoutType = NodeLayoutType.VERTICAL,
+                    configJson = """{"prompt":""}"""
+                )
+            } else {
+                // Load from database using Flow
+                nodeRepository.getNodeById(nodeId.toString()) ?: NodeEntity(
+                 id = 0,
+                 workflowId = _workflowId.value ?: "",
+                 title = "Node Not Found",
+                 type = "WEB_AGENT",
+                 x = 0f,
+                 y = 0f,
+                 layoutType = NodeLayoutType.VERTICAL,
+                 configJson = "{}"
+             )
+            }
+        }
+    }
+
+    suspend fun getNodeById(nodeId: Int): NodeEntity? {
+        return nodeRepository.getNodeById(nodeId.toString())
+    }
+
+    /**
+     * Save node - insert if new (nodeId == -1 or 0), update if existing
+     */
+    fun saveNode(
+        nodeId: Int,
+        title: String,
+        type: String,
+        configJson: String
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            if (nodeId == -1 || nodeId == 0) {
+                // Insert new node
+                val newNode = NodeEntity(
+                    id = 0, // Room auto-generates
+                    workflowId = _workflowId.value ?: "",
+                    title = title,
+                    type = type,
+                    x = 0f, // Default position, can be updated later
+                    y = 0f,
+                    layoutType = getLayoutTypeForNodeType(type),
+                    configJson = configJson
+                )
+                nodeRepository.insertNode(newNode)
+            } else {
+                // Update existing node
+                nodeRepository.updateNodeConfig(
+                    nodeId = nodeId,
+                    title = title,
+                    type = type,
+                    configJson = configJson
+                )
+            }
+        }
+    }
+
+    /**
+     * Delete node by ID
+     */
+    fun deleteNode(nodeId: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            nodeRepository.deleteNode(nodeId.toString())
+        }
+    }
+
+    /**
+     * Helper to map node type to layout type
+     */
+    private fun getLayoutTypeForNodeType(type: String): NodeLayoutType {
+        return when (type) {
+            "ALARM" -> NodeLayoutType.VERTICAL
+            "LOCATION" -> NodeLayoutType.VERTICAL
+            "WEB_AGENT" -> NodeLayoutType.VERTICAL
+            else -> NodeLayoutType.VERTICAL
         }
     }
 }

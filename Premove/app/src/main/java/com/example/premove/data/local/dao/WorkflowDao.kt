@@ -13,7 +13,7 @@ interface WorkflowDao{
     fun getAllWorkflows(): Flow<List<WorkflowEntity>>
 
     @Query("Select * from workflows where id=:workflowId")
-    fun getWorkflowById(workflowId: String): Flow<WorkflowEntity>
+    suspend fun getWorkflowById(workflowId: String): WorkflowEntity
 
     @Insert
     suspend fun insertWorkflow(workflow: WorkflowEntity)

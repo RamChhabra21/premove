@@ -27,8 +27,7 @@ import com.example.premove.data.local.entity.WorkflowEntity
 fun WorkflowCard(
     workflow: WorkflowEntity,
     onTap: (String) -> Unit,
-    toggleWorkflow: (WorkflowEntity) -> Unit,
-    onDeleteWorkflow: () -> Unit,
+    toggleWorkflow: (WorkflowEntity) -> Unit
  ){
     var checked by remember { mutableStateOf(true) }
     Row(
@@ -55,14 +54,6 @@ fun WorkflowCard(
                     toggleWorkflow(workflow)
                 }
             )
-
-            IconButton(
-                onClick = {
-                    onDeleteWorkflow()
-                }
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete")
-            }
         }
     }
 }

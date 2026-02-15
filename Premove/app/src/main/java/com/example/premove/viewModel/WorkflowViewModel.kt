@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.github.f4b6a3.uuid.UuidCreator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class WorkflowViewModel @Inject constructor(
@@ -42,6 +44,13 @@ class WorkflowViewModel @Inject constructor(
         )
 
     // workflow crud
+
+    suspend fun getWorkflowById(workflowId: String): WorkflowEntity {
+        return withContext(Dispatchers.IO) {
+            workflowRepository.getWorkflowById(workflowId)
+        }
+    }
+
     fun addWorkflow(title: String, description: String, isEnabled: Boolean, createdBy: Int) = viewModelScope.launch {
         workflowRepository.insertWorkflow(WorkflowEntity(id = UuidCreator.getTimeOrdered().toString(), title = title, description = description, isEnabled = isEnabled, createdBy = createdBy))
     }
