@@ -1,8 +1,11 @@
 package com.example.premove.data.local.entity
 
 import androidx.room.ColumnInfo
+import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.premove.ui.nodes.NodeStatus
 
+@Entity(tableName = "node_runs")
 data class NodeRunEntity(
     @PrimaryKey
     val id: String,
@@ -11,10 +14,10 @@ data class NodeRunEntity(
     val workflowRunId: String,
 
     @ColumnInfo
-    val nodeId: String,
+    val nodeId: Int,
 
     @ColumnInfo
-    val status: String,
+    val status: NodeStatus,
 
     @ColumnInfo
     val inputData: String? = null,

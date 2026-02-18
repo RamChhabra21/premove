@@ -7,9 +7,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.premove.data.local.entity.EdgeEntity
 import com.example.premove.data.repository.NodeRepository
 import com.example.premove.data.local.entity.NodeEntity
+import com.example.premove.data.local.entity.NodeRunEntity
 import com.example.premove.data.repository.EdgeRepository
+import com.example.premove.data.repository.NodeRunRepository
 import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.domain.model.NodeLayoutType
+import com.example.premove.ui.nodes.NodeStatus
 import com.example.premove.ui.workflows.NodeData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -32,6 +36,7 @@ import javax.inject.Inject
 class WorkflowEditorViewModel @Inject constructor(
     private val workflowRepository: WorkflowRepository,
     private val nodeRepository: NodeRepository,
+    private val nodeRunRepository: NodeRunRepository,
     private val edgeRepository: EdgeRepository
 ) : ViewModel(){
 
@@ -41,7 +46,7 @@ class WorkflowEditorViewModel @Inject constructor(
         .filterNotNull()
         .flatMapLatest {
             _workflowId ->
-            nodeRepository.getNodesByWorkflowId(_workflowId)
+            nodeRepository.observeNodesByWorkflowId(_workflowId)
         }
         .stateIn(
             viewModelScope,
@@ -60,6 +65,36 @@ class WorkflowEditorViewModel @Inject constructor(
             SharingStarted.WhileSubscribed(5000),
             emptyList()
         )
+
+    // NEW: Runtime status for latest run
+    private val latestRunStatus: StateFlow<List<NodeRunEntity>> = _workflowId
+        .filterNotNull()
+        .flatMapLatest { workflowId ->
+            nodeRunRepository.getLatestNodeRunByWorkflowId(workflowId)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+
+    val nodesWithStatus: StateFlow<List<NodeWithStatus>> = combine(
+        nodes,
+        latestRunStatus
+    ) { compileNodes, runtimeNodes ->
+        val runtimeMap = runtimeNodes.associateBy { it.nodeId }
+        compileNodes.map { node ->
+            NodeWithStatus(
+                id = node.id,
+                workflowId = node.workflowId,
+                title = node.title,
+                type = node.type,
+                x = node.x,
+                y = node.y,
+                layoutType = node.layoutType,
+                configJson = node.configJson,
+                status = runtimeMap[node.id]?.status ?: NodeStatus.PENDING
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     var localNodes = mutableStateOf<List<NodeData>>(emptyList())
     var localEdges = mutableStateOf<List<EdgeEntity>>(emptyList())
 
@@ -140,7 +175,7 @@ class WorkflowEditorViewModel @Inject constructor(
                 )
             } else {
                 // Load from database using Flow
-                nodeRepository.getNodeById(nodeId.toString()) ?: NodeEntity(
+                nodeRepository.getNodeById(nodeId) ?: NodeEntity(
                  id = 0,
                  workflowId = _workflowId.value ?: "",
                  title = "Node Not Found",
@@ -155,7 +190,7 @@ class WorkflowEditorViewModel @Inject constructor(
     }
 
     suspend fun getNodeById(nodeId: Int): NodeEntity? {
-        return nodeRepository.getNodeById(nodeId.toString())
+        return nodeRepository.getNodeById(nodeId)
     }
 
     /**
@@ -198,7 +233,7 @@ class WorkflowEditorViewModel @Inject constructor(
      */
     fun deleteNode(nodeId: Int) {
         viewModelScope.launch(Dispatchers.IO) {
-            nodeRepository.deleteNode(nodeId.toString())
+            nodeRepository.deleteNode(nodeId)
         }
     }
 
@@ -214,3 +249,15 @@ class WorkflowEditorViewModel @Inject constructor(
         }
     }
 }
+
+data class NodeWithStatus(
+    val id: Int,
+    val workflowId: String,
+    val title: String,
+    val type: String,
+    val x: Float,
+    val y: Float,
+    val layoutType: NodeLayoutType,
+    val configJson: String?,
+    val status: NodeStatus
+)

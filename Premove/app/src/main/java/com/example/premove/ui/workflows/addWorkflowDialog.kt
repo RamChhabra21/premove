@@ -71,7 +71,7 @@ fun AddWorkflowDialog(
                         onCreate(
                             title.trim(),
                             description.trim(),
-                            true,
+                            false,
                             1
                         )
                         onDismiss()

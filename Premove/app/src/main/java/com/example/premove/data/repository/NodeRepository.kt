@@ -12,12 +12,20 @@ class NodeRepository @Inject constructor(
 
     fun getAllNodes() = dao.getAllNodes()
 
-    suspend fun getNodeById(nodeId: String): NodeEntity? {
+    suspend fun getNodeById(nodeId: Int): NodeEntity? {
         return dao.getNodeById(nodeId)
     }
 
-    suspend fun getNodesByWorkflowId(workflowId: String) :  Flow<List<NodeEntity>> {
+    fun observeNodesByWorkflowId(workflowId: String) :  Flow<List<NodeEntity>> {
+        return dao.observeNodesByWorkflowId(workflowId)
+    }
+
+    suspend fun getNodesByWorkflowId(workflowId: String) :  List<NodeEntity> {
         return dao.getNodesByWorkflowId(workflowId)
+    }
+
+    suspend fun getNodesToBeInitialised(workflowId: String): List<NodeEntity>{
+        return dao.getNodesToBeInitialised(workflowId)
     }
 
     suspend fun insertNode(node: NodeEntity) {
@@ -37,7 +45,7 @@ class NodeRepository @Inject constructor(
         dao.updateNodePosition(nodeId, newPos.x, newPos.y)
     }
 
-    suspend fun deleteNode(nodeId: String){
+    suspend fun deleteNode(nodeId: Int){
         dao.deleteNodeById(nodeId = nodeId)
     }
 }

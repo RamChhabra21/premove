@@ -25,6 +25,7 @@ import com.example.premove.ui.workflows.WorkflowList
 import com.example.premove.ui.workflows.WorkflowTopBar
 import com.example.premove.viewModel.WorkflowViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.github.f4b6a3.uuid.UuidCreator
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +84,13 @@ fun Home(
 
     if (isAddWorkflowDialogOpen) {
         AddWorkflowDialog(
-            onCreate = workflowViewModel::addWorkflow,
+            onCreate = { title: String, description: String, isEnabled: Boolean, createdBy: Int ->
+                val workflowId = UuidCreator.getTimeOrdered().toString()
+                // add a new workflow
+                workflowViewModel.addWorkflow(id= workflowId, title, description, isEnabled, createdBy)
+                // initialise nodes into workflow
+                workflowViewModel.initialiseWorkflow(workflowId)
+            },
             onDismiss = {
                 isAddWorkflowDialogOpen = false
             }

@@ -29,7 +29,9 @@ fun WorkflowList(
                 WorkflowCard(
                     workflow,
                     onTap = onWorkflowClick,
-                    toggleWorkflow = { toggleWorkflow(workflow.id) }
+                    toggleWorkflow = {
+                        toggleWorkflow(workflow.id)
+                    }
                 )
                 if (index < filteredWorkflows.lastIndex)
                     Divider(

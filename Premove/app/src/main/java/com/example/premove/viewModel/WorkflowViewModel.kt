@@ -2,8 +2,15 @@ package com.example.premove.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.ColumnInfo
+import androidx.room.PrimaryKey
+import com.example.premove.data.local.entity.NodeRunEntity
 import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.data.local.entity.WorkflowEntity
+import com.example.premove.data.repository.NodeRepository
+import com.example.premove.data.repository.NodeRunRepository
+import com.example.premove.data.repository.WorkflowRunRepository
+import com.example.premove.ui.nodes.NodeStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +26,10 @@ import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class WorkflowViewModel @Inject constructor(
-    private val workflowRepository: WorkflowRepository
+    private val workflowRepository: WorkflowRepository,
+    private val workflowRunRepository: WorkflowRunRepository,
+    private val nodeRepository: NodeRepository,
+    private val nodeRunRepository: NodeRunRepository
 ) : ViewModel(){
     val searchQuery = MutableStateFlow("")
 
@@ -51,8 +61,8 @@ class WorkflowViewModel @Inject constructor(
         }
     }
 
-    fun addWorkflow(title: String, description: String, isEnabled: Boolean, createdBy: Int) = viewModelScope.launch {
-        workflowRepository.insertWorkflow(WorkflowEntity(id = UuidCreator.getTimeOrdered().toString(), title = title, description = description, isEnabled = isEnabled, createdBy = createdBy))
+    fun addWorkflow(id: String, title: String, description: String, isEnabled: Boolean, createdBy: Int) = viewModelScope.launch {
+        workflowRepository.insertWorkflow(WorkflowEntity(id, title = title, description = description, isEnabled = isEnabled, createdBy = createdBy))
     }
 
     fun updateWorkflow(id: String, title: String, description: String, isEnabled: Boolean, createdBy: Int) = viewModelScope.launch{
@@ -66,6 +76,42 @@ class WorkflowViewModel @Inject constructor(
     fun toggleWorkflow(workflowId: String) {
         viewModelScope.launch {
             workflowRepository.toggleWorkflow(workflowId)
+            initialiseWorkflow(workflowId)
+        }
+    }
+
+    fun initialiseWorkflow(workflowId: String) = viewModelScope.launch {
+        val workflowRunId = UuidCreator.getTimeOrdered().toString()
+        // make a new workflow run and mark all nodes pending
+        workflowRunRepository.insertWorkflowRun(workflowRunId, workflowId)
+        // get all nodes
+        val nodes = nodeRepository.getNodesByWorkflowId(workflowId)
+        // intialize nodes
+        val toInitialiseNodes = nodeRepository.getNodesToBeInitialised(workflowId)
+        val initialnodeMap = toInitialiseNodes.associateBy { it.id }
+
+        // generate nodeRuns for each node
+        for (node in nodes) {
+            if(initialnodeMap.containsKey(node.id)) {
+                nodeRunRepository.insertNodeRun(
+                    NodeRunEntity(
+                        id = UuidCreator.getTimeOrdered().toString(),
+                        workflowRunId = workflowRunId,
+                        nodeId = node.id,
+                        status = NodeStatus.READY
+                    )
+                )
+            }
+            else{
+                nodeRunRepository.insertNodeRun(
+                    NodeRunEntity(
+                        id = UuidCreator.getTimeOrdered().toString(),
+                        workflowRunId = workflowRunId,
+                        nodeId = node.id,
+                        status = NodeStatus.PENDING
+                    )
+                )
+            }
         }
     }
 

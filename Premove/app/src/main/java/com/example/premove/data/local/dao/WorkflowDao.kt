@@ -12,6 +12,9 @@ interface WorkflowDao{
     @Query("Select * from workflows")
     fun getAllWorkflows(): Flow<List<WorkflowEntity>>
 
+    @Query("Select * from workflows where isEnabled = 1")
+    fun getActiveWorkflows(): List<WorkflowEntity>
+
     @Query("Select * from workflows where id=:workflowId")
     suspend fun getWorkflowById(workflowId: String): WorkflowEntity
 

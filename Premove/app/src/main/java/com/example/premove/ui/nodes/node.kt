@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +37,10 @@ import androidx.compose.ui.unit.sp
 import com.example.premove.domain.model.NodeLayoutType
 import com.example.premove.ui.workflows.PortType
 
+enum class NodeStatus {
+    PENDING, RUNNING, COMPLETED, FAILED, READY
+}
+
 @Composable
 fun Node(
     id: Int,
@@ -45,6 +50,7 @@ fun Node(
     type: String = "Action",
     layoutType: NodeLayoutType = NodeLayoutType.HORIZONTAL,
     isSelected: Boolean = false,
+    status: NodeStatus = NodeStatus.PENDING,
     onClick: () -> Unit = {},
     onPositionChange: (Offset) -> Unit = {},
     onEdgeDragStart: (sourceNodeId: Int, startPosition: Offset, portType: PortType) -> Unit = { _, _, _ -> },
@@ -59,6 +65,23 @@ fun Node(
         currentPosition = position
     }
 
+    // STATUS COLORS
+    val nodeBackgroundColor = when (status) {
+        NodeStatus.PENDING -> Color.White
+        NodeStatus.RUNNING -> Color(0xFFFFF9C4)  // Light Yellow
+        NodeStatus.COMPLETED -> Color(0xFFC8E6C9) // Light Green
+        NodeStatus.FAILED -> Color(0xFFFFCDD2)    // Light Red
+        NodeStatus.READY -> Color(0xFFB3E5FC)  // Light Blue
+    }
+
+    val nodeBorderColor = when (status) {
+        NodeStatus.PENDING -> if (isSelected) Color.Blue else Color.Gray.copy(alpha = 0.3f)
+        NodeStatus.RUNNING -> Color(0xFFFBC02D)  // Yellow
+        NodeStatus.COMPLETED -> Color(0xFF4CAF50) // Green
+        NodeStatus.FAILED -> Color(0xFFF44336)    // Red
+        NodeStatus.READY -> Color(0xFFB3E5FC)   // Light Blue
+    }
+
     Box(
         modifier = Modifier
             .offset { IntOffset(currentPosition.x.toInt(), currentPosition.y.toInt()) }
@@ -71,10 +94,10 @@ fun Node(
                     elevation = if (isSelected) 8.dp else 4.dp,
                     shape = RoundedCornerShape(12.dp)
                 )
-                .background(Color.White, RoundedCornerShape(12.dp))
+                .background(nodeBackgroundColor, RoundedCornerShape(12.dp))
                 .border(
-                    width = if (isSelected) 2.dp else 1.dp,
-                    color = if (isSelected) Color.Blue else Color.Gray.copy(alpha = 0.3f),
+                    width = if (status == NodeStatus.RUNNING) 3.dp else if (isSelected) 2.dp else 1.dp,
+                    color = nodeBorderColor,
                     shape = RoundedCornerShape(12.dp)
                 )
                 .padding(12.dp)
@@ -111,21 +134,41 @@ fun Node(
                         color = Color.Black
                     )
                 }
-                Text(
-                    text = type,
-                    fontSize = 11.sp,
-                    color = Color.Gray
-                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = type,
+                        fontSize = 11.sp,
+                        color = Color.Gray
+                    )
+
+                    // STATUS BADGE
+                    if (status != NodeStatus.PENDING) {
+                        Text(
+                            text = when (status) {
+                                NodeStatus.RUNNING -> "⏳"
+                                NodeStatus.COMPLETED -> "✓"
+                                NodeStatus.FAILED -> "✗"
+                                else -> ""
+                            },
+                            fontSize = 14.sp
+                        )
+                    }
+                }
             }
         }
 
-        // Ports
+        // Ports (unchanged)
         val nodeHeight = size * 0.6f
         val portSize = 14.dp
 
         when (layoutType) {
             NodeLayoutType.HORIZONTAL -> {
-                // INPUT port (left) - DRAGGABLE
+                // INPUT port (left)
                 Box(
                     modifier = Modifier
                         .offset(x = -(portSize / 2), y = nodeHeight / 2 - portSize / 2)
@@ -161,7 +204,7 @@ fun Node(
                         )
                 )
 
-                // OUTPUT port (right) - DRAGGABLE
+                // OUTPUT port (right)
                 Box(
                     modifier = Modifier
                         .offset(x = size - portSize / 2, y = nodeHeight / 2 - portSize / 2)
@@ -186,20 +229,20 @@ fun Node(
                                 }
                             )
                         }
-                    .background(
-                        color = if (isValidOutputDropTarget) Color(0xFF1565C0) else Color(0xFF2196F3),
-                        shape = CircleShape
-                    )
-                    .border(
-                        width = if (isValidOutputDropTarget) 3.dp else 2.dp,
-                        color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color.White,
-                        shape = CircleShape
-                    )
+                        .background(
+                            color = if (isValidOutputDropTarget) Color(0xFF1565C0) else Color(0xFF2196F3),
+                            shape = CircleShape
+                        )
+                        .border(
+                            width = if (isValidOutputDropTarget) 3.dp else 2.dp,
+                            color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color.White,
+                            shape = CircleShape
+                        )
                 )
             }
 
             NodeLayoutType.VERTICAL -> {
-                // INPUT port (top) - DRAGGABLE
+                // INPUT port (top)
                 Box(
                     modifier = Modifier
                         .offset(x = size / 2 - portSize / 2, y = -(portSize / 2))
@@ -235,7 +278,7 @@ fun Node(
                         )
                 )
 
-                // OUTPUT port (bottom) - DRAGGABLE
+                // OUTPUT port (bottom)
                 Box(
                     modifier = Modifier
                         .offset(x = size / 2 - portSize / 2, y = nodeHeight - portSize / 2)
@@ -260,15 +303,15 @@ fun Node(
                                 }
                             )
                         }
-                    .background(
-                        color = if (isValidOutputDropTarget) Color(0xFF1565C0) else Color(0xFF2196F3),
-                        shape = CircleShape
-                    )
-                    .border(
-                        width = if (isValidOutputDropTarget) 3.dp else 2.dp,
-                        color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color.White,
-                        shape = CircleShape
-                    )
+                        .background(
+                            color = if (isValidOutputDropTarget) Color(0xFF1565C0) else Color(0xFF2196F3),
+                            shape = CircleShape
+                        )
+                        .border(
+                            width = if (isValidOutputDropTarget) 3.dp else 2.dp,
+                            color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color.White,
+                            shape = CircleShape
+                        )
                 )
             }
         }

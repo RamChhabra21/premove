@@ -13,10 +13,16 @@ interface NodeDao{
     fun getAllNodes(): Flow<List<NodeEntity>>
 
     @Query(value = "Select * from nodes where workflowId = :workflowId")
-    fun getNodesByWorkflowId(workflowId: String): Flow<List<NodeEntity>>
+    fun observeNodesByWorkflowId(workflowId: String): Flow<List<NodeEntity>>
+
+    @Query(value = "Select * from nodes where workflowId = :workflowId")
+    suspend fun getNodesByWorkflowId(workflowId: String): List<NodeEntity>
+
+    @Query(value = "Select * from nodes n where workflowId = :workflowId and not exists (select 1 from edges e where e.targetNodeId = n.id)")
+    suspend fun getNodesToBeInitialised(workflowId: String): List<NodeEntity>
 
     @Query("Select * from nodes where id=:nodeId")
-    suspend fun getNodeById(nodeId: String): NodeEntity?
+    suspend fun getNodeById(nodeId: Int): NodeEntity?
 
     @Insert
     suspend fun insertNode(node: NodeEntity)
@@ -31,5 +37,5 @@ interface NodeDao{
     suspend fun updateNodePosition(nodeId: Int, x: Float, y: Float)
 
     @Query("Delete from nodes where id = :nodeId")
-    suspend fun deleteNodeById(nodeId: String)
+    suspend fun deleteNodeById(nodeId: Int)
 }

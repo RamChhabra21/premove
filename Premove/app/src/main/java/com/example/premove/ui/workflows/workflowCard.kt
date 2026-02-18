@@ -29,7 +29,7 @@ fun WorkflowCard(
     onTap: (String) -> Unit,
     toggleWorkflow: (WorkflowEntity) -> Unit
  ){
-    var checked by remember { mutableStateOf(true) }
+    var checked by remember { mutableStateOf(workflow.isEnabled) }
     Row(
         modifier = Modifier.fillMaxWidth().padding(10.dp).clickable(onClick = {
             /* open workflow */

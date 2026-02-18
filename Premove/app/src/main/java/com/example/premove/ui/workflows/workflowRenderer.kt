@@ -32,6 +32,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.example.premove.ui.nodes.NodeStatus
 import java.util.UUID
 import kotlin.math.atan2
 import kotlin.math.pow
@@ -53,7 +54,8 @@ data class NodeData(
     val position: Offset,
     val title: String,
     val type: String,
-    val layoutType: NodeLayoutType
+    val layoutType: NodeLayoutType,
+    val status: NodeStatus
 )
 
 data class EdgeData(
@@ -72,6 +74,7 @@ fun WorkflowRenderer(
     }
 
     val dbNodes by workflowEditorViewModel.nodes.collectAsState()
+    val nodeWithStatus by workflowEditorViewModel.nodesWithStatus.collectAsState()
     var localNodes by workflowEditorViewModel.localNodes
     var localEdges by workflowEditorViewModel.localEdges
     val dbEdges by workflowEditorViewModel.edges.collectAsState()
@@ -80,14 +83,15 @@ fun WorkflowRenderer(
     var selectedNodeId by remember { mutableStateOf<Int?>(null) }
     val density = LocalDensity.current
 
-    LaunchedEffect(dbNodes) {
-        localNodes = dbNodes.map { node ->
+    LaunchedEffect(nodeWithStatus) {
+        localNodes = nodeWithStatus.map { node ->
             NodeData(
                 id = node.id,
                 position = Offset(node.x, node.y),
                 title = node.title,
                 type = node.type,
-                layoutType = node.layoutType
+                layoutType = node.layoutType,
+                status = node.status
             )
         }
     }
@@ -191,6 +195,10 @@ fun WorkflowRenderer(
                 if (state.sourceNodeId == node.id) false
                 else if (state.portType == PortType.OUTPUT) {
                     isNearPort(state.currentPosition, getInputPortPosition(node, density.density))
+                            && !(localEdges.any { edge ->
+                        edge.sourceNodeId == state.sourceNodeId.toString() &&
+                                edge.targetNodeId == node.id.toString()
+                    })
                 } else false
             } ?: false
 
@@ -198,6 +206,10 @@ fun WorkflowRenderer(
                 if (state.sourceNodeId == node.id) false
                 else if (state.portType == PortType.INPUT) {
                     isNearPort(state.currentPosition, getOutputPortPosition(node, density.density))
+                            && !(localEdges.any { edge ->
+                        edge.sourceNodeId == state.sourceNodeId.toString() &&
+                                edge.targetNodeId == node.id.toString()
+                    })
                 } else false
             } ?: false
 
@@ -208,6 +220,7 @@ fun WorkflowRenderer(
                 type = node.type,
                 layoutType = node.layoutType,
                 isSelected = selectedNodeId == node.id,
+                status= node.status,
                 isValidInputDropTarget = isValidInputDropTarget,
                 isValidOutputDropTarget = isValidOutputDropTarget,
                 onClick = {
@@ -252,14 +265,20 @@ fun WorkflowRenderer(
                                 targetNode.id.toString() to state.sourceNodeId.toString()
                             }
 
-                            workflowEditorViewModel.createEdge(
-                                EdgeEntity(
-                                    id = UUID.randomUUID().toString(),
-                                    workflowId = workflowId,
-                                    sourceNodeId = sourceId,
-                                    targetNodeId = targetId
+                            val edgeExists = localEdges.any { edge ->
+                                edge.sourceNodeId == sourceId && edge.targetNodeId == targetId
+                            }
+
+                            if(!edgeExists) {
+                                workflowEditorViewModel.createEdge(
+                                    EdgeEntity(
+                                        id = UUID.randomUUID().toString(),
+                                        workflowId = workflowId,
+                                        sourceNodeId = sourceId,
+                                        targetNodeId = targetId
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                     edgeDragState = null

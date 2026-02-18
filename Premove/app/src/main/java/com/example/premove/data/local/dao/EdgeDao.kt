@@ -12,7 +12,7 @@ interface EdgeDao {
     @Insert
     suspend fun insertEdge(edge: EdgeEntity)
 
-    @Query("SELECT * FROM EdgeEntity WHERE workflowId = :workflowId")
+    @Query("SELECT * FROM edges WHERE workflowId = :workflowId")
     fun getEdgesByWorkflowId(workflowId: String): Flow<List<EdgeEntity>>
 
     @Update
