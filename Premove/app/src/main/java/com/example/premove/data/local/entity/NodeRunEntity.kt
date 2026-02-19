@@ -20,6 +20,9 @@ data class NodeRunEntity(
     val status: NodeStatus,
 
     @ColumnInfo
+    val inputCount: Int,
+
+    @ColumnInfo
     val inputData: String? = null,
 
     @ColumnInfo

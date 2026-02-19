@@ -98,7 +98,8 @@ class WorkflowViewModel @Inject constructor(
                         id = UuidCreator.getTimeOrdered().toString(),
                         workflowRunId = workflowRunId,
                         nodeId = node.id,
-                        status = NodeStatus.READY
+                        status = NodeStatus.READY,
+                        inputCount = 0
                     )
                 )
             }
@@ -108,7 +109,8 @@ class WorkflowViewModel @Inject constructor(
                         id = UuidCreator.getTimeOrdered().toString(),
                         workflowRunId = workflowRunId,
                         nodeId = node.id,
-                        status = NodeStatus.PENDING
+                        status = NodeStatus.PENDING,
+                        inputCount = 0
                     )
                 )
             }

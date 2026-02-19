@@ -13,6 +13,10 @@ class NodeRunRepository @Inject constructor(
         return dao.getNodeRunsByWorkflowRunId(workflowRunId)
     }
 
+    suspend fun getNodeRunByNodeIdandWorkflowRunId(nodeId: Int, workflowRunId: String): NodeRunEntity{
+        return dao.getNodeRunByNodeIdandWorkflowRunId(nodeId, workflowRunId)
+    }
+
     suspend fun getNodeRunsByWorkflowRunIdandStatus(workflowRunId: String, status: NodeStatus): List<NodeRunEntity>{
         return dao.getNodeRunsByWorkflowRunIdandStatus(workflowRunId, status)
     }
@@ -23,5 +27,17 @@ class NodeRunRepository @Inject constructor(
 
     suspend fun insertNodeRun(nodeRunEntity: NodeRunEntity){
         dao.insertNodeRun(nodeRunEntity)
+    }
+
+    suspend fun updateNodeRunStatus(nodeId: Int, workflowRunId: String, status: NodeStatus): Int{
+        return dao.updateNodeRunStatus(nodeId, workflowRunId, status)
+    }
+
+    suspend fun compareandUpdateNodeRunStatus(nodeId: Int, workflowRunId: String, expectedStatus: NodeStatus, newStatus: NodeStatus): Int{
+        return dao.compareAndUpdateNodeRunStatus(nodeId, workflowRunId, expectedStatus, newStatus)
+    }
+
+    suspend fun incrementAndMarkReadyIfAvailable(nodeId: Int, workflowRunId: String): Int {
+        return dao.incrementAndMarkReadyIfAvailable(nodeId, workflowRunId)
     }
 }

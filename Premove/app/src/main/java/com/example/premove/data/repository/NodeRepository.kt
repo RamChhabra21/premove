@@ -24,6 +24,10 @@ class NodeRepository @Inject constructor(
         return dao.getNodesByWorkflowId(workflowId)
     }
 
+    suspend fun getNextConnectedNodes(nodeId: Int): List<NodeEntity> {
+        return dao.getNextConnectedNodes(nodeId)
+    }
+
     suspend fun getNodesToBeInitialised(workflowId: String): List<NodeEntity>{
         return dao.getNodesToBeInitialised(workflowId)
     }
@@ -39,6 +43,7 @@ class NodeRepository @Inject constructor(
     suspend fun updateNodeConfig(nodeId: Int, title: String, type: String, configJson: String){
         dao.updateNodeConfig(nodeId, title, type, configJson)
     }
+
 
     // update node position
     suspend fun updateNodePosition(nodeId: Int, newPos : Offset){

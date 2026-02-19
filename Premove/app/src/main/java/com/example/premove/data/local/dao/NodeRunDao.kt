@@ -3,6 +3,7 @@ package com.example.premove.data.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.example.premove.data.local.entity.NodeRunEntity
 import com.example.premove.ui.nodes.NodeStatus
@@ -20,11 +21,32 @@ interface NodeRunDao {
     @Query("select * from node_runs where workflowrunid = (select id from workflow_runs where workflowid=:workflowId order by createdat desc limit 1)")
     fun getLatestNodeRunByWorkflowId(workflowId: String): Flow<List<NodeRunEntity>>
 
+    @Query("Select * from node_runs where nodeId=:nodeId and workflowRunId=:workflowRunId")
+    suspend fun getNodeRunByNodeIdandWorkflowRunId(nodeId: Int, workflowRunId: String): NodeRunEntity
+
     @Query("Select * from node_runs where id=:nodeRunId")
     suspend fun getNodeRunById(nodeRunId: String): NodeRunEntity
 
     @Insert
     suspend fun insertNodeRun(nodeRun: NodeRunEntity)
+
+    @Query("update node_runs set status=:status where nodeId=:nodeId and workflowRunId=:workflowRunId")
+    suspend fun updateNodeRunStatus(nodeId: Int, workflowRunId: String, status: NodeStatus): Int
+
+    @Query("UPDATE node_runs SET status=:newStatus WHERE nodeId=:nodeId AND workflowRunId=:workflowRunId AND status=:expectedStatus")
+    suspend fun compareAndUpdateNodeRunStatus(nodeId: Int, workflowRunId: String, expectedStatus: NodeStatus, newStatus: NodeStatus): Int
+
+    @Query("""
+    UPDATE node_runs 
+    SET inputCount = inputCount + 1,
+        status = CASE 
+            WHEN inputCount + 1 = (SELECT COUNT(*) FROM edges WHERE targetNodeId = :nodeId AND workflowId = (SELECT workflowId FROM workflow_runs WHERE id = :workflowRunId))
+            THEN 'READY' 
+            ELSE status 
+        END
+    WHERE nodeId = :nodeId AND workflowRunId = :workflowRunId
+""")
+    suspend fun incrementAndMarkReadyIfAvailable(nodeId: Int, workflowRunId: String): Int
 
     @Update
     suspend fun updateNodeRun(nodeRun: NodeRunEntity)

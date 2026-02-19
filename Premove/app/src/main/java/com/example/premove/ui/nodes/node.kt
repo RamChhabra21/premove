@@ -38,7 +38,7 @@ import com.example.premove.domain.model.NodeLayoutType
 import com.example.premove.ui.workflows.PortType
 
 enum class NodeStatus {
-    PENDING, RUNNING, COMPLETED, FAILED, READY
+    PENDING, RUNNING, COMPLETED, FAILED, READY, PROCESSED
 }
 
 @Composable
@@ -72,6 +72,7 @@ fun Node(
         NodeStatus.COMPLETED -> Color(0xFFC8E6C9) // Light Green
         NodeStatus.FAILED -> Color(0xFFFFCDD2)    // Light Red
         NodeStatus.READY -> Color(0xFFB3E5FC)  // Light Blue
+        NodeStatus.PROCESSED -> Color(0xFFB2DFDB) // Light Teal
     }
 
     val nodeBorderColor = when (status) {
@@ -80,6 +81,7 @@ fun Node(
         NodeStatus.COMPLETED -> Color(0xFF4CAF50) // Green
         NodeStatus.FAILED -> Color(0xFFF44336)    // Red
         NodeStatus.READY -> Color(0xFFB3E5FC)   // Light Blue
+        NodeStatus.PROCESSED -> Color(0xFFB2DFDB) // Light Teal
     }
 
     Box(

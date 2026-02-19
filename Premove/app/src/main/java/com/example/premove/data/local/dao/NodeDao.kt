@@ -21,6 +21,9 @@ interface NodeDao{
     @Query(value = "Select * from nodes n where workflowId = :workflowId and not exists (select 1 from edges e where e.targetNodeId = n.id)")
     suspend fun getNodesToBeInitialised(workflowId: String): List<NodeEntity>
 
+    @Query("Select * from nodes n where id in (select targetNodeId from edges where sourceNodeId = :nodeId)")
+    suspend fun getNextConnectedNodes(nodeId: Int): List<NodeEntity>
+
     @Query("Select * from nodes where id=:nodeId")
     suspend fun getNodeById(nodeId: Int): NodeEntity?
 
