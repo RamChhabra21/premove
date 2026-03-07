@@ -6,5 +6,7 @@ sealed class Route(val route: String) {
 
     object WorkflowEditor : Route("workflow_editor")
 
+    object WorkflowConfig : Route("workflow_config")
+
     object NodeEditor : Route("node_editor")
 }

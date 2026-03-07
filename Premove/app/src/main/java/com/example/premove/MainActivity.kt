@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.premove.ui.home.Home
 import com.example.premove.ui.navigation.AppNavHost
 import com.example.premove.ui.theme.PreMoverTheme
 import dagger.hilt.android.AndroidEntryPoint

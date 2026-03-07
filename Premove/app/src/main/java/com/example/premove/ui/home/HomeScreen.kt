@@ -1,5 +1,6 @@
 package com.example.premove.ui.home
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +28,9 @@ import com.example.premove.ui.workflows.WorkflowTopBar
 import com.example.premove.viewModel.WorkflowViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.github.f4b6a3.uuid.UuidCreator
+import com.llamatik.library.platform.LlamaBridge
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +41,19 @@ fun Home(
     val filteredWorkflows by workflowViewModel.filteredWorkflows.collectAsState()
     val searchQuery by workflowViewModel.searchQuery.collectAsState()
     var isAddWorkflowDialogOpen by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+//    // load model
+//    val modelPath = LlamaBridge.getModelPath("Qwen_Qwen3-4B-GGUF_Qwen3-4B-Q4_K_M.gguf")
+//
+//    LlamaBridge.initGenerateModel(modelPath)
+//
+//    val output = LlamaBridge.generate(
+//        "Explain Kotlin Multiplatform in one sentence."
+//    )
+//
+//    println("llm output : $output")
 
     Column() {
         Scaffold(

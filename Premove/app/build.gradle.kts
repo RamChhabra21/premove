@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.premover"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -41,6 +41,9 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    androidResources {
+        noCompress += "gguf"
     }
 }
 
@@ -75,4 +78,5 @@ dependencies {
     // UUID dep
     implementation("com.github.f4b6a3:uuid-creator:5.0.0")
     ksp("com.google.dagger:hilt-compiler:2.57.1")
+    implementation("com.llamatik:library:0.16.0")
 }

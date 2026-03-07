@@ -27,7 +27,7 @@ class WorkflowEngine(
         // find active workflows first
         val activeWorkflows = workflowRepository.getActiveWorkflows()
 
-        // for each active workflow
+        // for each active workflow (and refer to workflow config if we need to run a workflow or not)
         activeWorkflows.forEach { workflow ->
             scope.launch {
                 withTimeout(5.minutes) {

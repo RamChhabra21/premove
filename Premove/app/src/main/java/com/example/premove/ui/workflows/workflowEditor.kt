@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -41,6 +42,7 @@ fun WorkflowEditor(
     workflowViewModel: WorkflowViewModel,
     workflowEditorViewModel: WorkflowEditorViewModel,
     onNodeClick: (Int) -> Unit,
+    onWorkflowConfigOpen: (String) -> Unit,
     onDelete: () -> Unit = {}
 ) {
     var offset by remember { mutableStateOf(Offset(0f, 0f)) }
@@ -67,12 +69,21 @@ fun WorkflowEditor(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text("Workflow Editor")
-                        IconButton(
-                            onClick = {
-                                workflowViewModel.onDeleteClicked(workflowId)
+                        Row() {
+                            IconButton(
+                                onClick = {
+                                    onWorkflowConfigOpen(workflowId)
+                                }
+                            ) {
+                                Icon(Icons.Default.Settings, contentDescription = "Delete")
                             }
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                            IconButton(
+                                onClick = {
+                                    workflowViewModel.onDeleteClicked(workflowId)
+                                }
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete")
+                            }
                         }
                     }
                         },

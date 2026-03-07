@@ -49,12 +49,15 @@ class AutomationService : Service() {
 
         scope.launch {
             while (isActive) {
-                Log.d("AutomationService", "✅ Service is alive")
+//                Log.d("AutomationService", "✅ Service is alive")
+
+
+
                 // perform actions here
                 // call workflow engine. execute here
 
                 workflowEngine.execute()
-                delay(30_000)
+                delay(5000)
             }
         }
 
