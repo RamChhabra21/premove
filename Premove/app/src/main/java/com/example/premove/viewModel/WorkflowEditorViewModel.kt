@@ -30,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -204,14 +205,17 @@ class WorkflowEditorViewModel @Inject constructor(
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             if (nodeId == -1 || nodeId == 0) {
+                val spawnX = 200f + (Random.nextFloat() * 200f - 50f)
+                val spawnY = 200f + (Random.nextFloat() * 200f - 50f)
+
                 // Insert new node
                 val newNode = NodeEntity(
                     id = 0, // Room auto-generates
                     workflowId = _workflowId.value ?: "",
                     title = title,
                     type = type,
-                    x = 0f, // Default position, can be updated later
-                    y = 0f,
+                    x = spawnX,
+                    y = spawnY,
                     layoutType = getLayoutTypeForNodeType(type),
                     configJson = configJson
                 )

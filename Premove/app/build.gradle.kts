@@ -79,4 +79,10 @@ dependencies {
     implementation("com.github.f4b6a3:uuid-creator:5.0.0")
     ksp("com.google.dagger:hilt-compiler:2.57.1")
     implementation("com.llamatik:library:0.16.0")
+
+    // OkHttp
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+// Gson
+    implementation("com.google.code.gson:gson:2.10.1")
 }

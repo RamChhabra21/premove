@@ -10,12 +10,13 @@ import com.example.premove.data.local.dao.NodeRunDao
 import com.example.premove.data.local.dao.WorkflowDao
 import com.example.premove.data.local.dao.WorkflowRunDao
 import com.example.premove.data.local.entity.EdgeEntity
+import com.example.premove.data.local.entity.EdgeRunEntity
 import com.example.premove.data.local.entity.NodeEntity
 import com.example.premove.data.local.entity.NodeRunEntity
 import com.example.premove.data.local.entity.WorkflowEntity
 import com.example.premove.data.local.entity.WorkflowRunEntity
 
-@Database(entities = [WorkflowEntity::class, NodeEntity::class, EdgeEntity::class, WorkflowRunEntity::class, NodeRunEntity::class], version = 11, exportSchema = false)
+@Database(entities = [WorkflowEntity::class, NodeEntity::class, EdgeEntity::class, WorkflowRunEntity::class, NodeRunEntity::class, EdgeRunEntity::class ], version = 14, exportSchema = false)
 abstract class AppDatabase : RoomDatabase(){
     abstract fun WorkflowDao(): WorkflowDao
 

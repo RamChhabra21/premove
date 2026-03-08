@@ -27,6 +27,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -45,7 +46,6 @@ fun WorkflowEditor(
     onWorkflowConfigOpen: (String) -> Unit,
     onDelete: () -> Unit = {}
 ) {
-    var offset by remember { mutableStateOf(Offset(0f, 0f)) }
     workflowEditorViewModel.setWorkflowId(workflowId)
     var workflow by remember { mutableStateOf<WorkflowEntity?>(null) }
     val selectedDeleteWorkflowId: String? by workflowViewModel.selectedDeleteWorkflowId.collectAsState(initial = null)
@@ -99,13 +99,15 @@ fun WorkflowEditor(
             FloatingActionButton(
                 containerColor = MaterialTheme.colorScheme.primary,
                 onClick = {
-                    // here add a new node
-                    workflowEditorViewModel.createNode(
-                        title = "New Node",
-                        type = "web",
-                        position = offset,
-                        configJson = ""
-                    )
+                // here add a new node
+//                    workflowEditorViewModel.createNode(
+//                        title = "New Node",
+//                        type = "web",
+//                        position = offset,
+//                        configJson = ""
+//                    )
+//
+                    onNodeClick(-1)
                 }
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "Add")

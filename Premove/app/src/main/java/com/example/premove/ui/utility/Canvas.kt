@@ -22,11 +22,11 @@ import com.example.premove.ui.workflows.WorkflowRenderer
 @Composable
 fun InteractiveDottedCanvas(
     workflowId: String,
-    onNodeClick: (Int) -> Unit
+    onNodeClick: (Int) -> Unit,
 ) {
+
     var offset by remember { mutableStateOf(Offset.Zero) }
     var zoom by remember { mutableFloatStateOf(1f) }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -76,7 +76,7 @@ fun InteractiveDottedCanvas(
         ) {
             WorkflowRenderer(
                 workflowId,
-                onNodeClick
+                onNodeClick,
             )
         }
     }

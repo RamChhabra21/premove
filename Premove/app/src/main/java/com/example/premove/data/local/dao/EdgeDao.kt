@@ -15,6 +15,9 @@ interface EdgeDao {
     @Query("SELECT * FROM edges WHERE workflowId = :workflowId")
     fun getEdgesByWorkflowId(workflowId: String): Flow<List<EdgeEntity>>
 
+    @Query("SELECT * FROM edges WHERE sourceNodeId = :nodeId and workflowId = :workflowId")
+    fun getEdgesBySourceNodeId(nodeId: Int, workflowId: String) : List<EdgeEntity>
+
     @Update
     suspend fun updateEdge(edge: EdgeEntity)
 }

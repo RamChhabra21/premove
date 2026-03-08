@@ -160,7 +160,6 @@ fun NodeEditor(
                                     nodeId = nodeId,
                                     title = nodeName,
                                     type = selectedNodeType!!.name,
-
                                     configJson = config
                                 )
 

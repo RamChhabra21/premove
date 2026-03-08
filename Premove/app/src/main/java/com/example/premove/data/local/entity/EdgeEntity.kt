@@ -22,5 +22,8 @@ data class EdgeEntity (
     val bendX: Float = 0f,  // default 0 = handle at midpoint
 
     @ColumnInfo
-    val bendY: Float = 0f   // default 0 = handle at midpoint
+    val bendY: Float = 0f,   // default 0 = handle at midpoint
+
+    @ColumnInfo
+    val condition: String? = null,  // "price < 50" | "is this urgent?" | null = always proceed
 )

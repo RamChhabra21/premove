@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import com.example.premove.ui.workflows.WorkflowEditor
 import com.example.premove.ui.home.Home
 import com.example.premove.ui.nodes.NodeEditor
+import com.example.premove.ui.workflows.WorkflowConfig
 import com.example.premove.viewModel.WorkflowEditorViewModel
 import com.example.premove.viewModel.WorkflowViewModel
 
@@ -78,8 +79,9 @@ fun NavGraphBuilder.workflowNavGraph(
             navController.getBackStackEntry(Route.WorkflowEditor.route + "/workflowId")
         }
 
+        val workflowViewModel: WorkflowViewModel = hiltViewModel(parentEntry)
         val workflowEditorViewModel: WorkflowEditorViewModel = hiltViewModel(parentEntry)
 
-        Text("hello")
+        WorkflowConfig(workflowId, workflowViewModel = workflowViewModel, onBack = {navController.popBackStack()})
     }
 }

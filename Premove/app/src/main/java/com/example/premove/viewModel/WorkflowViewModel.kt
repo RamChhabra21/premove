@@ -69,6 +69,23 @@ class WorkflowViewModel @Inject constructor(
         workflowRepository.updateWorkflow(WorkflowEntity(id = id, title = title, description = description, isEnabled = isEnabled, createdBy = createdBy))
     }
 
+    fun updateWorkflowByObj(id: String, params: WorkflowUpdateParams) = viewModelScope.launch {
+        val existing = workflowRepository.getWorkflowById(id)
+        workflowRepository.updateWorkflow(
+            existing.copy(
+                title          = params.title          ?: existing.title,
+                description    = params.description    ?: existing.description,
+                isEnabled      = params.isEnabled      ?: existing.isEnabled,
+                updatedAt      = params.updatedAt      ?: existing.updatedAt,
+                triggerType    = params.triggerType    ?: existing.triggerType,
+                cronExpression = params.cronExpression ?: existing.cronExpression,
+                webhookSecret  = params.webhookSecret  ?: existing.webhookSecret,
+                timeoutMinutes = params.timeoutMinutes ?: existing.timeoutMinutes,
+                maxRetries     = params.maxRetries     ?: existing.maxRetries
+            )
+        )
+    }
+
     fun deleteWorkflow(workflowId: String) = viewModelScope.launch{
         workflowRepository.deleteWorkflow(workflowId)
     }
@@ -129,3 +146,16 @@ class WorkflowViewModel @Inject constructor(
         _selectedDeleteWorkflowId.value = null
     }
 }
+
+data class WorkflowUpdateParams(
+    val title: String? = null,
+    val description: String? = null,
+    val isEnabled: Boolean? = null,
+    val updatedAt: Long? = null,
+    // new config fields
+    val triggerType: String? = null,
+    val cronExpression: String? = null,
+    val webhookSecret: String? = null,
+    val timeoutMinutes: Int? = null,
+    val maxRetries: Int? = null
+)

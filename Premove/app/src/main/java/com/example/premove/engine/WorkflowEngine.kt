@@ -2,10 +2,13 @@ package com.example.premove.engine
 
 import com.example.premove.data.local.entity.NodeEntity
 import com.example.premove.data.local.entity.NodeRunEntity
+import com.example.premove.data.repository.EdgeRepository
 import com.example.premove.data.repository.NodeRepository
 import com.example.premove.data.repository.NodeRunRepository
 import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.data.repository.WorkflowRunRepository
+import com.example.premove.data.repository.EdgeRunRepository
+import com.example.premove.network.LlmClient
 import com.example.premove.ui.nodes.NodeStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -13,14 +16,18 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import javax.inject.Inject
 import kotlin.time.Duration.Companion.minutes
 
 
-class WorkflowEngine(
+class WorkflowEngine @Inject constructor(
     private val workflowRepository: WorkflowRepository,
     private val workflowRunRepository: WorkflowRunRepository,
     private val nodeRepository: NodeRepository,
     private val nodeRunRepository: NodeRunRepository,
+    private val edgeRepository: EdgeRepository,
+    private val edgeRunRepository: EdgeRunRepository,
+    private val llmClient: LlmClient,   // add this
     private val scope: CoroutineScope
 ) {
     suspend fun execute() {
@@ -71,15 +78,30 @@ class WorkflowEngine(
                     val updated = nodeRunRepository.compareandUpdateNodeRunStatus(nodeRun.nodeId, latestWorkflowRun?.id ?: "",
                         NodeStatus.PROCESSED,NodeStatus.COMPLETED)
                     if(updated > 0){
-                        // now get next nodes connected to this node and progress this
-                        val nextNodes = nodeRepository.getNextConnectedNodes(nodeRun.nodeId)
-                        // move the flow to next nodes
-                        nextNodes.map { nextNode ->
+                        val outgoingEdges = edgeRepository.getEdgesBySourceNodeId(nodeRun.nodeId, workflowId)
+
+                        val edgeIdsToFire = llmClient.evaluateEdges(nodeRun.outputData, outgoingEdges)
+
+                        edgeIdsToFire.map { edgeId ->
                             async {
-                                // increment input reference counter
-                                nodeRunRepository.incrementAndMarkReadyIfAvailable(nextNode.id, latestWorkflowRun?.id ?: "")
+                                val edge = outgoingEdges.first { it.id == edgeId }
+                                nodeRunRepository.incrementAndMarkReadyIfAvailable(
+                                    edge.targetNodeId.toInt(),
+                                    latestWorkflowRun?.id ?: ""
+                                )
                             }
                         }.awaitAll()
+
+
+//                        // now get next nodes connected to this node and progress this
+//                        val nextNodes = nodeRepository.getNextConnectedNodes(nodeRun.nodeId)
+//                        // move the flow to next nodes
+//                        nextNodes.map { nextNode ->
+//                            async {
+//                                // increment input reference counter
+//                                nodeRunRepository.incrementAndMarkReadyIfAvailable(nextNode.id, latestWorkflowRun?.id ?: "")
+//                            }
+//                        }.awaitAll()
                     }
                 }
             }.awaitAll()
