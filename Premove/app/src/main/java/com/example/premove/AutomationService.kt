@@ -40,6 +40,9 @@ class AutomationService : Service() {
             workflowRunRepository = entryPoint.workflowRunRepository(),
             nodeRepository = entryPoint.nodeRepository(),
             nodeRunRepository = entryPoint.nodeRunRepository(),
+            edgeRepository = entryPoint.edgeRepository(),
+            edgeRunRepository = entryPoint.edgeRunRepository(),
+            llmClient = entryPoint.llmClient(),
             scope = scope
         )
     }
@@ -80,7 +83,7 @@ class AutomationService : Service() {
         return NotificationCompat.Builder(this, channelId)
             .setContentTitle("Automation Running")
             .setContentText("Workflows are being monitored")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .build()
     }
 

@@ -1,5 +1,6 @@
 package com.example.premove.network
 
+import android.util.Log
 import com.example.premove.data.local.entity.EdgeEntity
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -18,46 +19,74 @@ class LlmClient @Inject constructor(
     private val gson: Gson
 ) {
     companion object {
-        private const val BASE_URL = "http://10.0.2.2:8001/api/llm"
+        private const val BASE_URL = "http://192.168.1.32:8001/api/llm"
     }
+
+    data class EdgeResult(val edgeId: String, val inputData: String?)
 
     suspend fun evaluateEdges(
         outputData: String?,
         edges: List<EdgeEntity>
-    ): List<String> {
+    ): List<EdgeResult> {
 
-        // no conditions on any edge — fire all, skip network call
-        if (edges.all { it.condition == null }) {
-            return edges.map { it.id }
-        }
+//        if (edges.all { it.condition == null }) {
+//            return edges.map { EdgeResult(it.id, outputData) }
+//        }
+
+//        val prompt = buildString {
+//            appendLine("Node output: ${outputData ?: "none"}")
+//            appendLine("For each edge that should fire, return its id and the minimal relevant data to pass forward.")
+//            appendLine("Return ONLY a JSON array. Example: [{\"edgeId\":\"id1\",\"inputData\":\"relevant info\"}]")
+//            appendLine("Edges:")
+//            edges.forEach { edge ->
+//                appendLine("- id: ${edge.id}, condition: ${edge.condition ?: "always proceed"}")
+//            }
+//        }
 
         val prompt = buildString {
-            appendLine("A workflow node just completed with this output:")
-            appendLine(outputData ?: "no output")
-            appendLine()
-            appendLine("Decide which edges should propagate.")
-            appendLine("Return ONLY a JSON array of edge IDs, nothing else. Example: [\"id1\",\"id2\"]")
-            appendLine()
+            appendLine("Node output: ${outputData ?: "none"}")
+            appendLine("For each edge that should fire, return its id and the minimal relevant data to pass forward.")
+            appendLine("Return ONLY a JSON array. Example: [{\"edgeId\":\"id1\",\"inputData\":\"relevant info\"}]")
             appendLine("Edges:")
             edges.forEach { edge ->
                 appendLine("- id: ${edge.id}, condition: ${edge.condition ?: "always proceed"}")
             }
         }
 
+        Log.d("llm_prompt",prompt)
+
         val response = complete(prompt)
 
-        return response.response
-            .trim()
-            .removePrefix("[")
-            .removeSuffix("]")
-            .split(",")
-            .map { it.trim().removeSurrounding("\"") }
-            .filter { it.isNotBlank() }
+        Log.d("llm_response", response.content)
+
+        // parse response into List<EdgeResult>
+        return try {
+            val array = org.json.JSONArray(response.content.trim())
+            (0 until array.length()).map { i ->
+                val obj = array.getJSONObject(i)
+                EdgeResult(
+                    edgeId    = obj.getString("edgeId"),
+                    inputData = obj.optString("inputData").ifBlank { null }
+                )
+            }
+        } catch (e: Exception) {
+            // fallback — fire all with full output
+            edges.map { EdgeResult(it.id, outputData) }
+        }
     }
 
+    private data class LlmMessage(val role: String, val content: String)
+    private data class LlmRequest(
+        val messages: List<LlmMessage>,
+        val temperature: Double = 0.1
+    )
+    private data class LlmResponse(val content: String)
     private suspend fun complete(prompt: String): LlmResponse = withContext(Dispatchers.IO) {
-        val body = gson.toJson(LlmRequest(prompt))
-            .toRequestBody("application/json".toMediaType())
+        val body = gson.toJson(
+            LlmRequest(
+                messages = listOf(LlmMessage(role = "user", content = prompt))
+            )
+        ).toRequestBody("application/json".toMediaType())
 
         val request = Request.Builder()
             .url("$BASE_URL/complete")

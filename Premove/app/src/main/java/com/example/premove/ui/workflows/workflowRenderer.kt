@@ -4,11 +4,21 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -28,6 +38,8 @@ import com.example.premove.ui.nodes.Node
 import com.example.premove.viewModel.WorkflowEditorViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
@@ -65,7 +77,8 @@ data class EdgeData(
 @Composable
 fun WorkflowRenderer(
     workflowId: String,
-    onNodeClick: (Int) -> Unit
+    onNodeClick: (Int) -> Unit,
+    onEdgeConditionClick: (String) -> Unit
 ) {
     val workflowEditorViewModel: WorkflowEditorViewModel = hiltViewModel()
 
@@ -104,7 +117,8 @@ fun WorkflowRenderer(
                 sourceNodeId = edge.sourceNodeId,
                 targetNodeId = edge.targetNodeId,
                 bendX = edge.bendX,
-                bendY = edge.bendY
+                bendY = edge.bendY,
+                condition = edge.condition
             )
         }
     }
@@ -137,55 +151,73 @@ fun WorkflowRenderer(
                 val startPos = getOutputPortPosition(sourceNode, density.density)
                 val endPos = getInputPortPosition(targetNode, density.density)
 
-//                val handleX = (startPos.x + endPos.x) / 2 + edge.bendX
-//                val handleY = (startPos.y + endPos.y) / 2 + edge.bendY
+                val dx = endPos.x - startPos.x
+                val dy = endPos.y - startPos.y
+                val distance = sqrt(dx * dx + dy * dy)
+                val offset = (distance * 0.4f).coerceIn(40f, 200f)
+                val nx = (dx / distance) * offset
+                val ny = (dy / distance) * offset
 
-                       // Calculate actual curve position
-                       val dx = endPos.x - startPos.x
-                       val dy = endPos.y - startPos.y
-                       val distance = sqrt(dx * dx + dy * dy)
-                       val offset = (distance * 0.4f).coerceIn(40f, 200f)
-                       val nx = (dx / distance) * offset
-                       val ny = (dy / distance) * offset
+                val controlPoint1 = Offset(startPos.x + nx + edge.bendX * 0.5f, startPos.y + ny + edge.bendY * 0.5f)
+                val controlPoint2 = Offset(endPos.x - nx + edge.bendX * 0.5f, endPos.y - ny + edge.bendY * 0.5f)
 
-                       val controlPoint1 = Offset(startPos.x + nx + edge.bendX * 0.5f, startPos.y + ny + edge.bendY * 0.5f)
-                       val controlPoint2 = Offset(endPos.x - nx + edge.bendX * 0.5f, endPos.y - ny + edge.bendY * 0.5f)
-
-                       // Get point at t=0.5 on the actual bezier curve
-                      val handlePos = bezierPoint(0.5f, startPos, controlPoint1, controlPoint2, endPos)
-
-                val bendSensitivity = 2f
+                val handlePos = bezierPoint(0.5f, startPos, controlPoint1, controlPoint2, endPos)
 
                 Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .offset { IntOffset((handlePos.x - 4.5.dp.toPx()).toInt(), (handlePos.y - 4.5.dp.toPx()).toInt()) }
-                        .size(9.dp)
-                        .size(9.dp)
+                        .offset {
+                            IntOffset(
+                                (handlePos.x - 8.dp.toPx()).toInt(),
+                                (handlePos.y - 8.dp.toPx()).toInt()
+                            )
+                        }
+                        .size(16.dp)
+                        .background(
+                            if (edge.condition != null) Color.Black.copy(alpha = 0.7f) else Color.Black.copy(alpha = 0.25f),
+                            CircleShape
+                        )
                         .pointerInput(edge.id) {
                             detectDragGestures(
                                 onDrag = { change, dragAmount ->
                                     change.consume()
                                     localEdges = localEdges.map {
                                         if (it.id == edge.id) it.copy(
-                                            bendX = it.bendX + dragAmount.x * bendSensitivity,
-                                            bendY = it.bendY + dragAmount.y * bendSensitivity
+                                            bendX = it.bendX + dragAmount.x * 2f,
+                                            bendY = it.bendY + dragAmount.y * 2f
                                         ) else it
                                     }
                                 },
                                 onDragEnd = {
                                     val updatedEdge = localEdges.find { it.id == edge.id }
                                     if (updatedEdge != null) {
-                                        println("updateEdge : $updatedEdge")
-                                        workflowEditorViewModel.updateEdge(
-                                            updatedEdge
-                                        )
+                                        workflowEditorViewModel.updateEdge(updatedEdge)
                                     }
                                 }
                             )
                         }
-                        .background(Color.Gray.copy(alpha = 0.5f), CircleShape)
-                        .border(1.dp, Color.Gray, CircleShape)
-                )
+                        .pointerInput(edge.id + "tap") {
+                            detectTapGestures {
+                                onEdgeConditionClick(edge.id)
+                            }
+                        }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Edge condition",
+                        tint = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.size(10.dp)
+                    )
+
+                    if (edge.condition != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(5.dp)
+                                .align(Alignment.TopEnd)
+                                .background(Color(0xFFF59E0B), CircleShape)
+                        )
+                    }
+                }
             }
         }
 

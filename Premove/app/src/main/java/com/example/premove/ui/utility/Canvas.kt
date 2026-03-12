@@ -23,6 +23,7 @@ import com.example.premove.ui.workflows.WorkflowRenderer
 fun InteractiveDottedCanvas(
     workflowId: String,
     onNodeClick: (Int) -> Unit,
+    onEdgeConditionClick: (String) -> Unit
 ) {
 
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -77,6 +78,7 @@ fun InteractiveDottedCanvas(
             WorkflowRenderer(
                 workflowId,
                 onNodeClick,
+                onEdgeConditionClick
             )
         }
     }

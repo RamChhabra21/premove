@@ -1,5 +1,6 @@
 package com.example.premove.engine
 
+import android.util.Log
 import com.example.premove.data.local.entity.NodeEntity
 import com.example.premove.data.local.entity.NodeRunEntity
 import com.example.premove.data.repository.EdgeRepository
@@ -80,14 +81,15 @@ class WorkflowEngine @Inject constructor(
                     if(updated > 0){
                         val outgoingEdges = edgeRepository.getEdgesBySourceNodeId(nodeRun.nodeId, workflowId)
 
-                        val edgeIdsToFire = llmClient.evaluateEdges(nodeRun.outputData, outgoingEdges)
+                        val edgesWithDataToFire = llmClient.evaluateEdges(nodeRun.outputData, outgoingEdges)
 
-                        edgeIdsToFire.map { edgeId ->
+                        edgesWithDataToFire.map { edgeResult ->
                             async {
-                                val edge = outgoingEdges.first { it.id == edgeId }
+                                val edge = outgoingEdges.first { it.id == edgeResult.edgeId }
                                 nodeRunRepository.incrementAndMarkReadyIfAvailable(
                                     edge.targetNodeId.toInt(),
-                                    latestWorkflowRun?.id ?: ""
+                                    latestWorkflowRun?.id ?: "",
+                                    edgeResult.inputData
                                 )
                             }
                         }.awaitAll()
@@ -108,14 +110,23 @@ class WorkflowEngine @Inject constructor(
         }
     }
 
-    private suspend fun executeNode(node: NodeRunEntity) {
+    private suspend fun executeNode(nodeRun: NodeRunEntity) {
         // actual node execution logic
-        print("executing node : ${node.nodeId}")
+        print("executing node : ${nodeRun.nodeId}")
+
+        // get node details here
+
+        var node = nodeRepository.getNodeById(nodeRun.nodeId)
+
+        var outputData=node?.configJson!!
+
+        // update output data for the node Run after execution completion
+        nodeRunRepository.updateNodeOutputData(nodeRun.nodeId, nodeRun.workflowRunId, outputData)
 
         // mark node run as processed
         nodeRunRepository.compareandUpdateNodeRunStatus(
-            node.nodeId,
-            node.workflowRunId,
+            nodeRun.nodeId,
+            nodeRun.workflowRunId,
             NodeStatus.RUNNING,
             NodeStatus.PROCESSED
         )

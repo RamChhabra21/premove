@@ -43,6 +43,7 @@ fun WorkflowEditor(
     workflowViewModel: WorkflowViewModel,
     workflowEditorViewModel: WorkflowEditorViewModel,
     onNodeClick: (Int) -> Unit,
+    onEdgeConditionClick: (String) -> Unit,
     onWorkflowConfigOpen: (String) -> Unit,
     onDelete: () -> Unit = {}
 ) {
@@ -119,7 +120,7 @@ fun WorkflowEditor(
                 .padding(paddingValues) // respect top bar
                 .padding(10.dp),       // additional padding
         ) {
-            InteractiveDottedCanvas(workflowId, onNodeClick)
+            InteractiveDottedCanvas(workflowId, onNodeClick, onEdgeConditionClick)
         }
         selectedDeleteWorkflowId?.let { workflowId ->
             DeleteDialog(

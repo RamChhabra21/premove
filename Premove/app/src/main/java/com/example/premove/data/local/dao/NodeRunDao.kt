@@ -33,12 +33,16 @@ interface NodeRunDao {
     @Query("update node_runs set status=:status where nodeId=:nodeId and workflowRunId=:workflowRunId")
     suspend fun updateNodeRunStatus(nodeId: Int, workflowRunId: String, status: NodeStatus): Int
 
+    @Query("update node_runs set outputData=:outputData where nodeId=:nodeId and workflowRunId=:workflowRunId")
+    suspend fun updateNodeOutputData(nodeId: Int, workflowRunId: String, outputData: String): Int
+
     @Query("UPDATE node_runs SET status=:newStatus WHERE nodeId=:nodeId AND workflowRunId=:workflowRunId AND status=:expectedStatus")
     suspend fun compareAndUpdateNodeRunStatus(nodeId: Int, workflowRunId: String, expectedStatus: NodeStatus, newStatus: NodeStatus): Int
 
     @Query("""
     UPDATE node_runs 
     SET inputCount = inputCount + 1,
+        inputData = :inputData,
         status = CASE 
             WHEN inputCount + 1 = (SELECT COUNT(*) FROM edges WHERE targetNodeId = :nodeId AND workflowId = (SELECT workflowId FROM workflow_runs WHERE id = :workflowRunId))
             THEN 'READY' 
@@ -46,7 +50,7 @@ interface NodeRunDao {
         END
     WHERE nodeId = :nodeId AND workflowRunId = :workflowRunId
 """)
-    suspend fun incrementAndMarkReadyIfAvailable(nodeId: Int, workflowRunId: String): Int
+    suspend fun incrementAndMarkReadyIfAvailable(nodeId: Int, workflowRunId: String, inputData: String?): Int
 
     @Update
     suspend fun updateNodeRun(nodeRun: NodeRunEntity)

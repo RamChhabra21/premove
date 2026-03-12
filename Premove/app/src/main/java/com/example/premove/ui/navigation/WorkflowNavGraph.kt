@@ -6,6 +6,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.example.premove.ui.edges.EdgeConfig
 import com.example.premove.ui.workflows.WorkflowEditor
 import com.example.premove.ui.home.Home
 import com.example.premove.ui.nodes.NodeEditor
@@ -44,8 +45,30 @@ fun NavGraphBuilder.workflowNavGraph(
         },onWorkflowConfigOpen={
             workflowId ->
             navController.navigate(Route.WorkflowConfig.route + "/$workflowId")
-        }
+        },
+            onEdgeConditionClick = { edgeId ->
+                navController.navigate("workflow/$workflowId/edge/$edgeId")
+            }
             )
+    }
+
+    composable(
+        route = Route.WorkflowConfig.route + "/{workflowId}"
+    ) {
+            backStackEntry ->
+        val workflowId = backStackEntry.arguments
+            ?.getString("workflowId")
+
+        requireNotNull(workflowId) { "workflowId id is required" }
+
+        var parentEntry = remember(backStackEntry) {
+            navController.getBackStackEntry(Route.WorkflowEditor.route + "/workflowId")
+        }
+
+        val workflowViewModel: WorkflowViewModel = hiltViewModel(parentEntry)
+        val workflowEditorViewModel: WorkflowEditorViewModel = hiltViewModel(parentEntry)
+
+        WorkflowConfig(workflowId, workflowViewModel = workflowViewModel, onBack = {navController.popBackStack()})
     }
 
     composable(
@@ -66,22 +89,13 @@ fun NavGraphBuilder.workflowNavGraph(
         NodeEditor(nodeId, workflowEditorViewModel, onBack = {navController.popBackStack()})
     }
 
-    composable(
-        route = Route.WorkflowConfig.route + "/{workflowId}"
-    ) {
-            backStackEntry ->
-        val workflowId = backStackEntry.arguments
-            ?.getString("workflowId")
-
-        requireNotNull(workflowId) { "workflowId id is required" }
-
-        var parentEntry = remember(backStackEntry) {
-            navController.getBackStackEntry(Route.WorkflowEditor.route + "/workflowId")
-        }
-
-        val workflowViewModel: WorkflowViewModel = hiltViewModel(parentEntry)
-        val workflowEditorViewModel: WorkflowEditorViewModel = hiltViewModel(parentEntry)
-
-        WorkflowConfig(workflowId, workflowViewModel = workflowViewModel, onBack = {navController.popBackStack()})
+    composable("workflow/{workflowId}/edge/{edgeId}") { backStackEntry ->
+        val workflowId = backStackEntry.arguments?.getString("workflowId")!!
+        val edgeId = backStackEntry.arguments?.getString("edgeId")!!
+        EdgeConfig(
+            edgeId = edgeId,
+            workflowId = workflowId,
+            onBack = { navController.popBackStack() }
+        )
     }
 }

@@ -3,21 +3,26 @@ package com.example.premove.di
 import android.content.Context
 import com.example.premove.data.local.AppDatabase
 import com.example.premove.data.local.dao.EdgeDao
+import com.example.premove.data.local.dao.EdgeRunDao
 import com.example.premove.data.local.dao.NodeDao
 import com.example.premove.data.local.dao.NodeRunDao
 import com.example.premove.data.local.dao.WorkflowDao
 import com.example.premove.data.local.dao.WorkflowRunDao
 import com.example.premove.data.repository.EdgeRepository
+import com.example.premove.data.repository.EdgeRunRepository
 import com.example.premove.data.repository.NodeRepository
 import com.example.premove.data.repository.NodeRunRepository
 import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.data.repository.WorkflowRunRepository
+import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import dagger.hilt.android.qualifiers.ApplicationContext
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -54,6 +59,11 @@ object AppModule {
     }
 
     @Provides
+    fun provideEdgeRunDao(db: AppDatabase): EdgeRunDao {
+        return db.EdgeRunDao()
+    }
+
+    @Provides
     @Singleton
     fun provideWorkflowRepository(workflowDao: WorkflowDao): WorkflowRepository {
         return WorkflowRepository(workflowDao)
@@ -81,5 +91,27 @@ object AppModule {
     @Singleton
     fun provideNodeRunRepository(nodeRunDao: NodeRunDao): NodeRunRepository {
         return NodeRunRepository(nodeRunDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideEdgeRunRepository(edgeRunDao: EdgeRunDao): EdgeRunRepository {
+        return EdgeRunRepository(edgeRunDao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson {
+        return Gson()
     }
 }

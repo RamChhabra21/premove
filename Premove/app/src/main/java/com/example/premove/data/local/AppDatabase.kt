@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.premove.data.local.dao.EdgeDao
+import com.example.premove.data.local.dao.EdgeRunDao
 import com.example.premove.data.local.dao.NodeDao
 import com.example.premove.data.local.dao.NodeRunDao
 import com.example.premove.data.local.dao.WorkflowDao
@@ -27,6 +28,8 @@ abstract class AppDatabase : RoomDatabase(){
     abstract fun NodeRunDao(): NodeRunDao
 
     abstract fun WorkflowRunDao(): WorkflowRunDao
+
+    abstract fun EdgeRunDao(): EdgeRunDao
 
     companion object {
         @Volatile
