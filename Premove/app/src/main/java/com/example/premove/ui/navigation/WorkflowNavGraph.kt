@@ -37,19 +37,23 @@ fun NavGraphBuilder.workflowNavGraph(
         val workflowViewModel : WorkflowViewModel = hiltViewModel()
         val workflowEditorViewModel: WorkflowEditorViewModel = hiltViewModel()
 
-        WorkflowEditor(workflowId, workflowViewModel, workflowEditorViewModel, onNodeClick = {
-            nodeId ->
-            navController.navigate(Route.NodeEditor.route + "/$nodeId")
-        },onDelete = {
-            navController.popBackStack()
-        },onWorkflowConfigOpen={
-            workflowId ->
-            navController.navigate(Route.WorkflowConfig.route + "/$workflowId")
-        },
+        WorkflowEditor(
+            workflowId,
+            workflowViewModel,
+            workflowEditorViewModel,
+            onNodeClick = { nodeId ->
+                navController.navigate(Route.NodeEditor.route + "/$nodeId")
+            },
             onEdgeConditionClick = { edgeId ->
                 navController.navigate("workflow/$workflowId/edge/$edgeId")
+            },
+            onWorkflowConfigOpen = { workflowId ->
+                navController.navigate(Route.WorkflowConfig.route + "/$workflowId")
+            },
+            onDelete = {
+                navController.popBackStack()
             }
-            )
+        )
     }
 
     composable(

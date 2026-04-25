@@ -25,6 +25,10 @@ class NodeRunRepository @Inject constructor(
         return dao.getLatestNodeRunByWorkflowId(workflowId)
     }
 
+    suspend fun getRunningNodesWithJobId(workflowRunId: String): List<NodeRunEntity>{
+        return dao.getRunningNodesWithJobId(workflowRunId)
+    }
+
     suspend fun insertNodeRun(nodeRunEntity: NodeRunEntity){
         dao.insertNodeRun(nodeRunEntity)
     }
@@ -35,6 +39,10 @@ class NodeRunRepository @Inject constructor(
 
     suspend fun updateNodeOutputData(nodeId: Int, workflowRunId: String, outputData: String): Int{
         return dao.updateNodeOutputData(nodeId, workflowRunId, outputData)
+    }
+
+    suspend fun updateNodeJobId(nodeId: Int, workflowRunId: String, jobId: String): Int{
+        return dao.updateNodeJobId(nodeId, workflowRunId, jobId)
     }
 
 

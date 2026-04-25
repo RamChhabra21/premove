@@ -19,7 +19,7 @@ class LlmClient @Inject constructor(
     private val gson: Gson
 ) {
     companion object {
-        private const val BASE_URL = "http://192.168.1.32:8001/api/llm"
+        private const val BASE_URL = "http://192.168.1.13:8001/api/llm"
     }
 
     data class EdgeResult(val edgeId: String, val inputData: String?)
@@ -28,21 +28,6 @@ class LlmClient @Inject constructor(
         outputData: String?,
         edges: List<EdgeEntity>
     ): List<EdgeResult> {
-
-//        if (edges.all { it.condition == null }) {
-//            return edges.map { EdgeResult(it.id, outputData) }
-//        }
-
-//        val prompt = buildString {
-//            appendLine("Node output: ${outputData ?: "none"}")
-//            appendLine("For each edge that should fire, return its id and the minimal relevant data to pass forward.")
-//            appendLine("Return ONLY a JSON array. Example: [{\"edgeId\":\"id1\",\"inputData\":\"relevant info\"}]")
-//            appendLine("Edges:")
-//            edges.forEach { edge ->
-//                appendLine("- id: ${edge.id}, condition: ${edge.condition ?: "always proceed"}")
-//            }
-//        }
-
         val prompt = buildString {
             appendLine("Node output: ${outputData ?: "none"}")
             appendLine("For each edge that should fire, return its id and the minimal relevant data to pass forward.")

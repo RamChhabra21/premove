@@ -29,6 +29,9 @@ data class NodeRunEntity(
     val outputData: String? = null,
 
     @ColumnInfo
+    val jobId: String? = null,
+
+    @ColumnInfo
     val error: String? = null,
 
     @ColumnInfo

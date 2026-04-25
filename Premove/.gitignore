@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Google Services configuration
+app/google-services.json
+
+# Kotlin logs and transient files
+.kotlin/

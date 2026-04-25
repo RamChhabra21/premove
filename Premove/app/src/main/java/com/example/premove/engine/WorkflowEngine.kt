@@ -1,7 +1,6 @@
 package com.example.premove.engine
 
 import android.util.Log
-import com.example.premove.data.local.entity.NodeEntity
 import com.example.premove.data.local.entity.NodeRunEntity
 import com.example.premove.data.repository.EdgeRepository
 import com.example.premove.data.repository.NodeRepository
@@ -108,6 +107,37 @@ class WorkflowEngine @Inject constructor(
                 }
             }.awaitAll()
         }
+
+        // phase 3: check RUNNING nodes with jobId (async nodes)
+        val asyncNodeRuns = nodeRunRepository.getRunningNodesWithJobId(latestWorkflowRun?.id ?: "")
+        val jobTracker = JobTracker()
+        coroutineScope {
+            asyncNodeRuns.map { nodeRun ->
+                async {
+                    val jobId = nodeRun.jobId
+                    if (jobId == null) {
+                        Log.w("WorkflowEngine", "Skipping nodeRun ${nodeRun?.nodeId} — jobId is null")
+                        return@async
+                    }
+                    when (val data = jobTracker.getJobData(jobId)) {
+                        is JobResult.Done -> {
+                            nodeRunRepository.updateNodeOutputData(nodeRun.nodeId, nodeRun.workflowRunId, data.output)
+                            nodeRunRepository.compareandUpdateNodeRunStatus(
+                                nodeRun.nodeId, nodeRun.workflowRunId,
+                                NodeStatus.RUNNING, NodeStatus.PROCESSED
+                            )
+                        }
+                        is JobResult.Failed -> {
+                            nodeRunRepository.compareandUpdateNodeRunStatus(
+                                nodeRun.nodeId, nodeRun.workflowRunId,
+                                NodeStatus.RUNNING, NodeStatus.FAILED
+                            )
+                        }
+                        is JobResult.InProgress -> { /* next cycle checks again */ }
+                    }
+                }
+            }.awaitAll()
+        }
     }
 
     private suspend fun executeNode(nodeRun: NodeRunEntity) {
@@ -116,19 +146,38 @@ class WorkflowEngine @Inject constructor(
 
         // get node details here
 
-        var node = nodeRepository.getNodeById(nodeRun.nodeId)
+        val node = nodeRepository.getNodeById(nodeRun.nodeId)!!
 
-        var outputData=node?.configJson!!
+        // actual Node Execution
 
-        // update output data for the node Run after execution completion
-        nodeRunRepository.updateNodeOutputData(nodeRun.nodeId, nodeRun.workflowRunId, outputData)
+        val nodeExecutor = NodeExecutor()
 
-        // mark node run as processed
-        nodeRunRepository.compareandUpdateNodeRunStatus(
-            nodeRun.nodeId,
-            nodeRun.workflowRunId,
-            NodeStatus.RUNNING,
-            NodeStatus.PROCESSED
-        )
+        when(val outputData=nodeExecutor.execute(node,nodeRun)){
+            is NodeExecutionResult.Completed -> {
+                // update output data for the node Run after execution completion
+                nodeRunRepository.updateNodeOutputData(nodeRun.nodeId, nodeRun.workflowRunId, outputData.output)
+
+                // mark node run as processed
+                nodeRunRepository.compareandUpdateNodeRunStatus(
+                    nodeRun.nodeId,
+                    nodeRun.workflowRunId,
+                    NodeStatus.RUNNING,
+                    NodeStatus.PROCESSED
+                )
+            }
+            is NodeExecutionResult.Pending -> {
+                // update the jobId
+                nodeRunRepository.updateNodeJobId(nodeRun.nodeId, nodeRun.workflowRunId, outputData.jobId)
+            }
+            is NodeExecutionResult.Failed -> {
+                // mark node run as failed
+                nodeRunRepository.compareandUpdateNodeRunStatus(
+                    nodeRun.nodeId,
+                    nodeRun.workflowRunId,
+                    NodeStatus.RUNNING,
+                    NodeStatus.FAILED
+                )
+            }
+        }
     }
 }

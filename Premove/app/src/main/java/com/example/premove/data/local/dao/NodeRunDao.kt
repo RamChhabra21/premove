@@ -27,6 +27,9 @@ interface NodeRunDao {
     @Query("Select * from node_runs where id=:nodeRunId")
     suspend fun getNodeRunById(nodeRunId: String): NodeRunEntity
 
+    @Query("Select * from node_runs where status='RUNNING' and workflowRunId=:workflowRunId is not null")
+    suspend fun getRunningNodesWithJobId(workflowRunId: String): List<NodeRunEntity>
+
     @Insert
     suspend fun insertNodeRun(nodeRun: NodeRunEntity)
 
@@ -51,6 +54,9 @@ interface NodeRunDao {
     WHERE nodeId = :nodeId AND workflowRunId = :workflowRunId
 """)
     suspend fun incrementAndMarkReadyIfAvailable(nodeId: Int, workflowRunId: String, inputData: String?): Int
+
+    @Query("Update node_runs set jobId=:jobId where nodeId=:nodeId and workflowRunId=:workflowRunId")
+    suspend fun updateNodeJobId(nodeId: Int, workflowRunId: String, jobId: String): Int
 
     @Update
     suspend fun updateNodeRun(nodeRun: NodeRunEntity)
