@@ -17,7 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.premove.auth.AuthViewModel
+import com.example.premove.viewModel.AuthViewModel
 import com.example.premove.ui.auth.LoginScreen
 import com.example.premove.ui.navigation.AppNavHost
 import com.example.premove.ui.theme.PreMoverTheme

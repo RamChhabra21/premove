@@ -1,9 +1,9 @@
-package com.example.premove.auth
+package com.example.premove.viewModel
 
-import android.util.Log
+import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.premove.GoogleAuthClient
+import com.example.premove.auth.GoogleAuthClient
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,10 +44,11 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun signIn() {
+    fun signIn(activity: Activity) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            googleAuthClient.signIn()
+
+            googleAuthClient.signIn(activity)
                 .onSuccess { user ->
                     _state.update { it.copy(user = user, isLoading = false) }
                 }

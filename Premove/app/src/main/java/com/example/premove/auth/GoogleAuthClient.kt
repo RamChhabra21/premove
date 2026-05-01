@@ -1,5 +1,6 @@
-package com.example.premove
+package com.example.premove.auth
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
@@ -8,9 +9,9 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.ClearCredentialException
 import androidx.credentials.exceptions.GetCredentialException
+import com.example.premove.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseUser
@@ -25,7 +26,7 @@ class GoogleAuthClient @Inject constructor(
     @ApplicationContext private val context: Context,
     private val auth: FirebaseAuth
 ) {
-    private val credentialManager = CredentialManager.create(context)
+    private val credentialManager = CredentialManager.Companion.create(context)
 
     fun getSignedInUser(): FirebaseUser? = auth.currentUser
 
@@ -56,7 +57,7 @@ class GoogleAuthClient @Inject constructor(
         }
     }
 
-    suspend fun signIn(): Result<FirebaseUser> {
+    suspend fun signIn(activity: Activity): Result<FirebaseUser>{
         val googleIdOption = GetGoogleIdOption.Builder()
             .setServerClientId(context.getString(R.string.default_web_client_id))
             .setFilterByAuthorizedAccounts(false)
@@ -67,12 +68,13 @@ class GoogleAuthClient @Inject constructor(
             .build()
 
         return try {
-            val result = credentialManager.getCredential(context, request)
+            val result = credentialManager.getCredential(activity, request)
             val credential = result.credential
 
             if (credential is CustomCredential &&
-                credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                credential.type == GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+            ) {
+                val googleIdTokenCredential = GoogleIdTokenCredential.Companion.createFrom(credential.data)
                 val firebaseCredential = GoogleAuthProvider.getCredential(
                     googleIdTokenCredential.idToken, null
                 )

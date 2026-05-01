@@ -2,8 +2,10 @@ package com.example.premove.network
 
 import android.util.Log
 import com.example.premove.data.local.entity.EdgeEntity
+import com.google.firebase.auth.FirebaseAuth
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -11,15 +13,13 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 
-private data class LlmRequest(val prompt: String)
-private data class LlmResponse(val response: String)
-
 class LlmClient @Inject constructor(
     private val httpClient: OkHttpClient,
-    private val gson: Gson
+    private val gson: Gson,
+    private val firebaseAuth: FirebaseAuth
 ) {
     companion object {
-        private const val BASE_URL = "http://192.168.1.13:8001/api/llm"
+        private const val BASE_URL = "http://192.168.1.41:8001/api/llm"
     }
 
     data class EdgeResult(val edgeId: String, val inputData: String?)
@@ -66,7 +66,15 @@ class LlmClient @Inject constructor(
         val temperature: Double = 0.1
     )
     private data class LlmResponse(val content: String)
+
     private suspend fun complete(prompt: String): LlmResponse = withContext(Dispatchers.IO) {
+        val token = try {
+            firebaseAuth.currentUser?.getIdToken(false)?.await()?.token
+        } catch (e: Exception) {
+            Log.e("LlmClient", "Error fetching auth token", e)
+            null
+        }
+
         val body = gson.toJson(
             LlmRequest(
                 messages = listOf(LlmMessage(role = "user", content = prompt))
@@ -76,9 +84,15 @@ class LlmClient @Inject constructor(
         val request = Request.Builder()
             .url("$BASE_URL/complete")
             .post(body)
+            .apply {
+                token?.let {
+                    addHeader("Authorization", "Bearer $it")
+                }
+            }
             .build()
-
+        
         val response = httpClient.newCall(request).execute()
-        gson.fromJson(response.body?.string(), LlmResponse::class.java)
+        val responseBody = response.body?.string() ?: ""
+        gson.fromJson(responseBody, LlmResponse::class.java)
     }
 }

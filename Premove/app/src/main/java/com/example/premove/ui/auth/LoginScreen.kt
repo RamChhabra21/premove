@@ -1,5 +1,6 @@
 package com.example.premove.ui.auth
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
@@ -24,12 +25,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.premove.auth.AuthViewModel
+import com.example.premove.viewModel.AuthViewModel
 
 @Composable
 fun LoginScreen(
@@ -38,6 +40,8 @@ fun LoginScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var startAnimation by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val activity = context as? Activity
 
     LaunchedEffect(Unit) {
         startAnimation = true
@@ -177,7 +181,11 @@ fun LoginScreen(
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     } else {
                         Button(
-                            onClick = { viewModel.signIn() },
+                            onClick = {
+                                activity?.let {
+                                    viewModel.signIn(it)
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(64.dp),

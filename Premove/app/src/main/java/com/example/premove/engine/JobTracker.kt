@@ -24,7 +24,7 @@ data class JobRequest(
 
 class JobTracker {
 
-    private val baseUrl = "http://192.168.1.13:8001/api/job"
+    private val baseUrl = "http://192.168.1.41:8001/api/job"
 
     // --- start a job, returns jobId ---
     // request:  { workflow_id, goal, node_id, workflow_type }
