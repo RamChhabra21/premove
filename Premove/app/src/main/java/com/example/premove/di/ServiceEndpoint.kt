@@ -6,6 +6,8 @@ import com.example.premove.data.repository.NodeRepository
 import com.example.premove.data.repository.NodeRunRepository
 import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.data.repository.WorkflowRunRepository
+import com.example.premove.engine.JobTracker
+import com.example.premove.engine.NodeExecutor
 import com.example.premove.network.LlmClient
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -21,4 +23,6 @@ interface ServiceEntryPoint {
     fun edgeRepository(): EdgeRepository
     fun edgeRunRepository(): EdgeRunRepository
     fun llmClient(): LlmClient
+    fun jobTracker(): JobTracker
+    fun nodeExecutor(): NodeExecutor
 }

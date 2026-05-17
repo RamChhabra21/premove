@@ -30,6 +30,13 @@ interface NodeRunDao {
     @Query("Select * from node_runs where status='RUNNING' and workflowRunId=:workflowRunId is not null")
     suspend fun getRunningNodesWithJobId(workflowRunId: String): List<NodeRunEntity>
 
+    @Query("""
+        SELECT nr.* FROM node_runs nr
+        JOIN nodes n ON nr.nodeId = n.id
+        WHERE nr.status = 'PENDING' AND n.type = :nodeType
+    """)
+    suspend fun getPendingNodeRunsByType(nodeType: String): List<NodeRunEntity>
+
     @Insert
     suspend fun insertNodeRun(nodeRun: NodeRunEntity)
 
@@ -39,6 +46,9 @@ interface NodeRunDao {
     @Query("update node_runs set outputData=:outputData where nodeId=:nodeId and workflowRunId=:workflowRunId")
     suspend fun updateNodeOutputData(nodeId: Int, workflowRunId: String, outputData: String): Int
 
+    @Query("UPDATE node_runs SET status=:newStatus, inputData=:inputData WHERE nodeId=:nodeId AND workflowRunId=:workflowRunId")
+    suspend fun updateNodeInputAndStatus(nodeId: Int, workflowRunId: String, inputData: String?, newStatus: NodeStatus): Int
+
     @Query("UPDATE node_runs SET status=:newStatus WHERE nodeId=:nodeId AND workflowRunId=:workflowRunId AND status=:expectedStatus")
     suspend fun compareAndUpdateNodeRunStatus(nodeId: Int, workflowRunId: String, expectedStatus: NodeStatus, newStatus: NodeStatus): Int
 
@@ -47,16 +57,19 @@ interface NodeRunDao {
     SET inputCount = inputCount + 1,
         inputData = :inputData,
         status = CASE 
-            WHEN inputCount + 1 = (SELECT COUNT(*) FROM edges WHERE targetNodeId = :nodeId AND workflowId = (SELECT workflowId FROM workflow_runs WHERE id = :workflowRunId))
+            WHEN NOT :isTrigger AND inputCount + 1 = (SELECT COUNT(*) FROM edges WHERE targetNodeId = :nodeId AND workflowId = (SELECT workflowId FROM workflow_runs WHERE id = :workflowRunId))
             THEN 'READY' 
             ELSE status 
         END
     WHERE nodeId = :nodeId AND workflowRunId = :workflowRunId
 """)
-    suspend fun incrementAndMarkReadyIfAvailable(nodeId: Int, workflowRunId: String, inputData: String?): Int
+    suspend fun incrementAndMarkReadyIfAvailable(nodeId: Int, workflowRunId: String, inputData: String?, isTrigger: Boolean): Int
 
     @Query("Update node_runs set jobId=:jobId where nodeId=:nodeId and workflowRunId=:workflowRunId")
     suspend fun updateNodeJobId(nodeId: Int, workflowRunId: String, jobId: String): Int
+
+    @Query("Update node_runs set retryCount=:retryCount where nodeId=:nodeId and workflowRunId=:workflowRunId")
+    suspend fun updateNodeRetryCount(nodeId: Int, workflowRunId: String, retryCount: Int): Int
 
     @Update
     suspend fun updateNodeRun(nodeRun: NodeRunEntity)

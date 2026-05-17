@@ -1,11 +1,19 @@
 package com.example.premove.engine
 
 import android.util.Log
+import com.example.premove.network.NetworkConfig
+import com.google.firebase.auth.FirebaseAuth
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
+import javax.inject.Inject
+import javax.inject.Singleton
 
 // --- Job Result ---
 sealed class JobResult {
@@ -22,32 +30,52 @@ data class JobRequest(
     val workflowType: String = "WEB"
 )
 
-class JobTracker {
+@Singleton
+class JobTracker @Inject constructor(
+    private val httpClient: OkHttpClient,
+    private val gson: Gson,
+    private val firebaseAuth: FirebaseAuth
+) {
 
-    private val baseUrl = "http://192.168.1.41:8001/api/job"
+    private val baseUrl = "${NetworkConfig.BASE_URL}/job"
+
+    private suspend fun getAuthToken(): String? {
+        return try {
+            firebaseAuth.currentUser?.getIdToken(false)?.await()?.token
+        } catch (e: Exception) {
+            Log.e("JobTracker", "Error fetching auth token", e)
+            null
+        }
+    }
 
     // --- start a job, returns jobId ---
-    // request:  { workflow_id, goal, node_id, workflow_type }
-    // response: { job_id: "019d1c79-...", status: "queued" }
     suspend fun startJob(request: JobRequest): String? = withContext(Dispatchers.IO) {
         try {
-            val connection = (URL(baseUrl).openConnection() as HttpURLConnection).apply {
-                requestMethod = "POST"
-                setRequestProperty("Content-Type", "application/json")
-                doOutput = true
-            }
-
+            val token = getAuthToken()
             val body = JSONObject().apply {
                 put("workflow_id", request.workflowId)
                 put("goal", request.goal)
                 put("node_id", request.nodeId)
                 put("workflow_type", request.workflowType)
-            }.toString()
+            }.toString().toRequestBody("application/json".toMediaType())
 
-            connection.outputStream.use { it.write(body.toByteArray()) }
+            val httpRequest = Request.Builder()
+                .url(baseUrl)
+                .post(body)
+                .apply {
+                    token?.let { addHeader("Authorization", "Bearer $it") }
+                }
+                .build()
 
-            val response = connection.inputStream.bufferedReader().readText()
-            JSONObject(response).getString("job_id")
+            httpClient.newCall(httpRequest).execute().use { response ->
+                val responseBody = response.body?.string() ?: ""
+                if (response.isSuccessful) {
+                    JSONObject(responseBody).getString("job_id")
+                } else {
+                    Log.e("JobTracker", "Start job failed: ${response.code} $responseBody")
+                    null
+                }
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -55,25 +83,33 @@ class JobTracker {
     }
 
     // --- get job data, returns JobResult ---
-    // response (in progress): { job_id: "...", status: "queued/running" }
-    // response (done):        { job_id: "...", status: "completed", output: "..." }
-    // response (failed):      { job_id: "...", status: "failed", error: "..." }
     suspend fun getJobData(jobId: String): JobResult = withContext(Dispatchers.IO) {
         try {
-            val connection = (URL("$baseUrl/$jobId").openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                setRequestProperty("Content-Type", "application/json")
-            }
+            val token = getAuthToken()
+            val httpRequest = Request.Builder()
+                .url("$baseUrl/$jobId")
+                .get()
+                .apply {
+                    token?.let { addHeader("Authorization", "Bearer $it") }
+                }
+                .build()
 
-            val response = connection.inputStream.bufferedReader().readText()
-            val json = JSONObject(response)
+            httpClient.newCall(httpRequest).execute().use { response ->
+                val responseBody = response.body?.string() ?: ""
+                if (!response.isSuccessful) {
+                    Log.e("JobTracker", "Get job data failed: ${response.code} $responseBody")
+                    return@withContext JobResult.Failed
+                }
 
-            Log.d("workflow_engine","data coming in :  $json")
-            Log.d("workflow_engine","job status : ${json.getString("status")}")
-            when (json.getString("status")) {
-                "COMPLETED" -> JobResult.Done(json.optString("result", null))
-                "FAILED"    -> JobResult.Failed
-                else        -> JobResult.InProgress  // queued, running
+                val json = JSONObject(responseBody)
+                Log.d("workflow_engine", "data coming in :  $json")
+                Log.d("workflow_engine", "job status : ${json.getString("status")}")
+                
+                when (json.getString("status").uppercase()) {
+                    "COMPLETED" -> JobResult.Done(json.optString("result", ""))
+                    "FAILED"    -> JobResult.Failed
+                    else        -> JobResult.InProgress
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()

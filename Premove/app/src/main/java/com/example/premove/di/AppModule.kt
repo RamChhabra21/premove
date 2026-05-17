@@ -14,6 +14,7 @@ import com.example.premove.data.repository.NodeRepository
 import com.example.premove.data.repository.NodeRunRepository
 import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.data.repository.WorkflowRunRepository
+import com.example.premove.network.AuthInterceptor
 import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
@@ -101,8 +102,9 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

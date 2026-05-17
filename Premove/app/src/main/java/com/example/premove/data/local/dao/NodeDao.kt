@@ -33,7 +33,7 @@ interface NodeDao{
     @Update
     suspend fun updateNode(node: NodeEntity)
 
-    @Query(value = "UPDATE nodes SET title = :title,type = :type, configJson = :configJson WHERE id = :nodeId")
+    @Query(value = "UPDATE nodes SET title = :title, type = :type, configJson = :configJson WHERE id = :nodeId")
     suspend fun updateNodeConfig(nodeId: Int, title: String, type: String, configJson: String)
 
     @Query(value = "Update nodes set x = :x, y = :y where id = :nodeId")

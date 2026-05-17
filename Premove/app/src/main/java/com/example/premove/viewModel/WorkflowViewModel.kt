@@ -1,15 +1,17 @@
 package com.example.premove.viewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.ColumnInfo
-import androidx.room.PrimaryKey
 import com.example.premove.data.local.entity.NodeRunEntity
 import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.data.local.entity.WorkflowEntity
+import com.example.premove.data.local.entity.WorkflowRunEntity
 import com.example.premove.data.repository.NodeRepository
 import com.example.premove.data.repository.NodeRunRepository
 import com.example.premove.data.repository.WorkflowRunRepository
+import com.example.premove.domain.model.NodeCategory
+import com.example.premove.domain.model.NodeRegistry
 import com.example.premove.ui.nodes.NodeStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,6 +24,7 @@ import javax.inject.Inject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.github.f4b6a3.uuid.UuidCreator
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 @HiltViewModel
@@ -61,6 +64,10 @@ class WorkflowViewModel @Inject constructor(
         }
     }
 
+    fun getWorkflowRuns(workflowId: String): Flow<List<WorkflowRunEntity>> {
+        return workflowRunRepository.getWorkflowRunsByWorkflowId(workflowId)
+    }
+
     fun addWorkflow(id: String, title: String, description: String, isEnabled: Boolean, createdBy: Int) = viewModelScope.launch {
         workflowRepository.insertWorkflow(WorkflowEntity(id, title = title, description = description, isEnabled = isEnabled, createdBy = createdBy))
     }
@@ -77,11 +84,9 @@ class WorkflowViewModel @Inject constructor(
                 description    = params.description    ?: existing.description,
                 isEnabled      = params.isEnabled      ?: existing.isEnabled,
                 updatedAt      = params.updatedAt      ?: existing.updatedAt,
-                triggerType    = params.triggerType    ?: existing.triggerType,
-                cronExpression = params.cronExpression ?: existing.cronExpression,
-                webhookSecret  = params.webhookSecret  ?: existing.webhookSecret,
                 timeoutMinutes = params.timeoutMinutes ?: existing.timeoutMinutes,
-                maxRetries     = params.maxRetries     ?: existing.maxRetries
+                maxRetries     = params.maxRetries     ?: existing.maxRetries,
+                autoReset      = params.autoReset      ?: existing.autoReset
             )
         )
     }
@@ -109,28 +114,22 @@ class WorkflowViewModel @Inject constructor(
 
         // generate nodeRuns for each node
         for (node in nodes) {
-            if(initialnodeMap.containsKey(node.id)) {
-                nodeRunRepository.insertNodeRun(
-                    NodeRunEntity(
-                        id = UuidCreator.getTimeOrdered().toString(),
-                        workflowRunId = workflowRunId,
-                        nodeId = node.id,
-                        status = NodeStatus.READY,
-                        inputCount = 0
-                    )
+            val isInitial = initialnodeMap.containsKey(node.id)
+            val isTrigger = NodeRegistry.getCategory(node.type) == NodeCategory.TRIGGER
+
+            // Check if it's an initial node (no dependencies) AND NOT a trigger.
+            // Trigger nodes should always stay PENDING until an external event fires them.
+            val initialStatus = if (isInitial && !isTrigger) NodeStatus.READY else NodeStatus.PENDING
+
+            nodeRunRepository.insertNodeRun(
+                NodeRunEntity(
+                    id = UuidCreator.getTimeOrdered().toString(),
+                    workflowRunId = workflowRunId,
+                    nodeId = node.id,
+                    status = initialStatus,
+                    inputCount = 0
                 )
-            }
-            else{
-                nodeRunRepository.insertNodeRun(
-                    NodeRunEntity(
-                        id = UuidCreator.getTimeOrdered().toString(),
-                        workflowRunId = workflowRunId,
-                        nodeId = node.id,
-                        status = NodeStatus.PENDING,
-                        inputCount = 0
-                    )
-                )
-            }
+            )
         }
     }
 
@@ -152,10 +151,7 @@ data class WorkflowUpdateParams(
     val description: String? = null,
     val isEnabled: Boolean? = null,
     val updatedAt: Long? = null,
-    // new config fields
-    val triggerType: String? = null,
-    val cronExpression: String? = null,
-    val webhookSecret: String? = null,
     val timeoutMinutes: Int? = null,
-    val maxRetries: Int? = null
+    val maxRetries: Int? = null,
+    val autoReset: Boolean? = null
 )

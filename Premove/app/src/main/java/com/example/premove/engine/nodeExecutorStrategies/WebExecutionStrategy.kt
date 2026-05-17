@@ -7,10 +7,13 @@ import com.example.premove.engine.JobTracker
 import com.example.premove.engine.NodeExecutionResult
 import com.example.premove.engine.NodeExecutionStrategy
 import org.json.JSONObject
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class WebExecutionStrategy : NodeExecutionStrategy {
-
-    private val jobTracker = JobTracker()
+@Singleton
+class WebExecutionStrategy @Inject constructor(
+    private val jobTracker: JobTracker
+) : NodeExecutionStrategy {
 
     override suspend fun execute(node: NodeEntity, nodeRunEntity: NodeRunEntity): NodeExecutionResult {
         val config = node.configJson?.let { JSONObject(it) }

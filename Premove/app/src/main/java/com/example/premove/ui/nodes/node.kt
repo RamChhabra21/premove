@@ -1,5 +1,6 @@
 package com.example.premove.ui.nodes
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -8,11 +9,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,6 +35,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -39,30 +43,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.premove.domain.model.NodeLayoutType
+import com.example.premove.domain.model.NodeRegistry
+import com.example.premove.domain.model.NodeCategory
 import com.example.premove.ui.workflows.PortType
 
 enum class NodeStatus {
     PENDING, RUNNING, COMPLETED, FAILED, READY, PROCESSED
-}
-
-private fun nodeTypeAccentColor(type: String): Color = when (type.uppercase()) {
-    "WEB_AGENT"  -> Color(0xFF2196F3)
-    "ALARM"      -> Color(0xFF9C27B0)
-    "LOCATION"   -> Color(0xFFFF5722)
-    "EMAIL"      -> Color(0xFF00897B)
-    "DATABASE"   -> Color(0xFF5C6BC0)
-    "WEBHOOK"    -> Color(0xFFE91E63)
-    else         -> Color(0xFF607D8B)
-}
-
-private fun nodeTypeIcon(type: String): String = when (type.uppercase()) {
-    "WEB_AGENT"  -> "🌐"
-    "ALARM"      -> "🔔"
-    "LOCATION"   -> "📍"
-    "EMAIL"      -> "✉️"
-    "DATABASE"   -> "🗄️"
-    "WEBHOOK"    -> "⚡"
-    else         -> "⚙️"
 }
 
 private fun statusBarColor(status: NodeStatus, accentColor: Color): Color = when (status) {
@@ -135,7 +121,13 @@ fun Node(
     LaunchedEffect(position) { currentPosition = position }
     LaunchedEffect(layoutType) { currentLayout = layoutType }
 
-    val accentColor = nodeTypeAccentColor(type)
+    val definition = NodeRegistry.getDefinition(type)
+    val accentColor = definition?.accentColor ?: Color(0xFF607D8B)
+    val icon = definition?.icon ?: "⚙️"
+    val iconRes = definition?.iconRes
+    val category = definition?.category ?: NodeCategory.ACTION
+    val displayName = definition?.displayName ?: type
+
     val borderColor = statusBorderColor(status, isSelected)
     val nodeHeight = size * 0.6f   // 72.dp — matches WorkflowRenderer
     val portSize = 14.dp
@@ -226,11 +218,19 @@ fun Node(
                             .border(0.5.dp, accentColor.copy(alpha = 0.2f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = nodeTypeIcon(type),
-                            fontSize = 9.sp,
-                            lineHeight = 9.sp
-                        )
+                        if (iconRes != null) {
+                            Image(
+                                painter = painterResource(id = iconRes),
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        } else {
+                            Text(
+                                text = icon,
+                                fontSize = 9.sp,
+                                lineHeight = 9.sp
+                            )
+                        }
                     }
 
                     // Title + type
@@ -247,16 +247,23 @@ fun Node(
                             overflow = TextOverflow.Ellipsis,
                             lineHeight = 13.sp
                         )
-                        Text(
-                            text = type.replace("_", " ")
-                                .lowercase()
-                                .replaceFirstChar { it.uppercase() },
-                            fontSize = 9.sp,
-                            color = Color(0xFF9E9E9E),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            lineHeight = 11.sp
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = displayName,
+                                fontSize = 8.sp,
+                                color = Color(0xFF9E9E9E),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                lineHeight = 10.sp
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "• ${category.name}",
+                                fontSize = 7.sp,
+                                color = accentColor.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
                     // Status badge
@@ -281,146 +288,157 @@ fun Node(
         }
 
         // ── PORTS ──
+        
+        val showInput = category != NodeCategory.TRIGGER
+        val showOutput = true
 
         when (currentLayout) {
             NodeLayoutType.HORIZONTAL -> {
                 // INPUT port (left)
-                Box(
-                    modifier = Modifier
-                        .offset(x = -(portSize / 2), y = nodeHeight / 2 - portSize / 2)
-                        .size(portSize)
-                        .pointerInput("input_$id") {
-                            var dragPosition = Offset.Zero
-                            detectDragGestures(
-                                onDragStart = {
-                                    dragPosition = Offset(
-                                        currentPosition.x,
-                                        currentPosition.y + (nodeHeight / 2).toPx()
-                                    )
-                                    onEdgeDragStart(id, dragPosition, PortType.INPUT)
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragPosition += dragAmount
-                                    onEdgeDrag(dragPosition)
-                                },
-                                onDragEnd = { onEdgeDragEnd(null, Offset.Zero) }
+                if (showInput) {
+                    Box(
+                        modifier = Modifier
+                            .offset(x = -(portSize / 2), y = nodeHeight / 2 - portSize / 2)
+                            .size(portSize)
+                            .pointerInput("input_$id") {
+                                var dragPosition = Offset.Zero
+                                detectDragGestures(
+                                    onDragStart = {
+                                        dragPosition = Offset(
+                                            currentPosition.x,
+                                            currentPosition.y + (nodeHeight / 2).toPx()
+                                        )
+                                        onEdgeDragStart(id, dragPosition, PortType.INPUT)
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragPosition += dragAmount
+                                        onEdgeDrag(dragPosition)
+                                    },
+                                    onDragEnd = { onEdgeDragEnd(null, Offset.Zero) }
+                                )
+                            }
+                            .background(
+                                if (isValidInputDropTarget) Color(0xFF4CAF50) else Color.White,
+                                CircleShape
                             )
-                        }
-                        .background(
-                            if (isValidInputDropTarget) Color(0xFF4CAF50) else Color.White,
-                            CircleShape
-                        )
-                        .border(
-                            width = if (isValidInputDropTarget) 2.dp else 1.5.dp,
-                            color = if (isValidInputDropTarget) Color(0xFF1B5E20) else Color(0xFF4CAF50),
-                            shape = CircleShape
-                        )
-                )
+                            .border(
+                                width = if (isValidInputDropTarget) 2.dp else 1.5.dp,
+                                color = if (isValidInputDropTarget) Color(0xFF1B5E20) else Color(0xFF4CAF50),
+                                shape = CircleShape
+                            )
+                    )
+                }
 
                 // OUTPUT port (right)
-                Box(
-                    modifier = Modifier
-                        .offset(x = size - portSize / 2, y = nodeHeight / 2 - portSize / 2)
-                        .size(portSize)
-                        .pointerInput("output_$id") {
-                            var dragPosition = Offset.Zero
-                            detectDragGestures(
-                                onDragStart = {
-                                    dragPosition = Offset(
-                                        currentPosition.x + size.toPx(),
-                                        currentPosition.y + (nodeHeight / 2).toPx()
-                                    )
-                                    onEdgeDragStart(id, dragPosition, PortType.OUTPUT)
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragPosition += dragAmount
-                                    onEdgeDrag(dragPosition)
-                                },
-                                onDragEnd = { onEdgeDragEnd(null, Offset.Zero) }
+                if (showOutput) {
+                    Box(
+                        modifier = Modifier
+                            .offset(x = size - portSize / 2, y = nodeHeight / 2 - portSize / 2)
+                            .size(portSize)
+                            .pointerInput("output_$id") {
+                                var dragPosition = Offset.Zero
+                                detectDragGestures(
+                                    onDragStart = {
+                                        dragPosition = Offset(
+                                            currentPosition.x + size.toPx(),
+                                            currentPosition.y + (nodeHeight / 2).toPx()
+                                        )
+                                        onEdgeDragStart(id, dragPosition, PortType.OUTPUT)
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragPosition += dragAmount
+                                        onEdgeDrag(dragPosition)
+                                    },
+                                    onDragEnd = { onEdgeDragEnd(null, Offset.Zero) }
+                                )
+                            }
+                            .background(
+                                if (isValidOutputDropTarget) Color(0xFF2196F3) else Color.White,
+                                CircleShape
                             )
-                        }
-                        .background(
-                            if (isValidOutputDropTarget) Color(0xFF2196F3) else Color.White,
-                            CircleShape
-                        )
-                        .border(
-                            width = if (isValidOutputDropTarget) 2.dp else 1.5.dp,
-                            color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color(0xFF2196F3),
-                            shape = CircleShape
-                        )
-                )
+                            .border(
+                                width = if (isValidOutputDropTarget) 2.dp else 1.5.dp,
+                                color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color(0xFF2196F3),
+                                shape = CircleShape
+                            )
+                    )
+                }
             }
 
             NodeLayoutType.VERTICAL -> {
                 // INPUT port (top)
-                Box(
-                    modifier = Modifier
-                        .offset(x = size / 2 - portSize / 2, y = -(portSize / 2))
-                        .size(portSize)
-                        .pointerInput("input_$id") {
-                            var dragPosition = Offset.Zero
-                            detectDragGestures(
-                                onDragStart = {
-                                    dragPosition = Offset(
-                                        currentPosition.x + (size / 2).toPx(),
-                                        currentPosition.y
-                                    )
-                                    onEdgeDragStart(id, dragPosition, PortType.INPUT)
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragPosition += dragAmount
-                                    onEdgeDrag(dragPosition)
-                                },
-                                onDragEnd = { onEdgeDragEnd(null, Offset.Zero) }
+                if (showInput) {
+                    Box(
+                        modifier = Modifier
+                            .offset(x = size / 2 - portSize / 2, y = -(portSize / 2))
+                            .size(portSize)
+                            .pointerInput("input_$id") {
+                                var dragPosition = Offset.Zero
+                                detectDragGestures(
+                                    onDragStart = {
+                                        dragPosition = Offset(
+                                            currentPosition.x + (size / 2).toPx(),
+                                            currentPosition.y
+                                        )
+                                        onEdgeDragStart(id, dragPosition, PortType.INPUT)
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragPosition += dragAmount
+                                        onEdgeDrag(dragPosition)
+                                    },
+                                    onDragEnd = { onEdgeDragEnd(null, Offset.Zero) }
+                                )
+                            }
+                            .background(
+                                if (isValidInputDropTarget) Color(0xFF4CAF50) else Color.White,
+                                CircleShape
                             )
-                        }
-                        .background(
-                            if (isValidInputDropTarget) Color(0xFF4CAF50) else Color.White,
-                            CircleShape
-                        )
-                        .border(
-                            width = if (isValidInputDropTarget) 2.dp else 1.5.dp,
-                            color = if (isValidInputDropTarget) Color(0xFF1B5E20) else Color(0xFF4CAF50),
-                            shape = CircleShape
-                        )
-                )
+                            .border(
+                                width = if (isValidInputDropTarget) 2.dp else 1.5.dp,
+                                color = if (isValidInputDropTarget) Color(0xFF1B5E20) else Color(0xFF4CAF50),
+                                shape = CircleShape
+                            )
+                    )
+                }
 
                 // OUTPUT port (bottom)
-                Box(
-                    modifier = Modifier
-                        .offset(x = size / 2 - portSize / 2, y = nodeHeight - portSize / 2)
-                        .size(portSize)
-                        .pointerInput("output_$id") {
-                            var dragPosition = Offset.Zero
-                            detectDragGestures(
-                                onDragStart = {
-                                    dragPosition = Offset(
-                                        currentPosition.x + (size / 2).toPx(),
-                                        currentPosition.y + nodeHeight.toPx()
-                                    )
-                                    onEdgeDragStart(id, dragPosition, PortType.OUTPUT)
-                                },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    dragPosition += dragAmount
-                                    onEdgeDrag(dragPosition)
-                                },
-                                onDragEnd = { onEdgeDragEnd(null, Offset.Zero) }
+                if (showOutput) {
+                    Box(
+                        modifier = Modifier
+                            .offset(x = size / 2 - portSize / 2, y = nodeHeight - portSize / 2)
+                            .size(portSize)
+                            .pointerInput("output_$id") {
+                                var dragPosition = Offset.Zero
+                                detectDragGestures(
+                                    onDragStart = {
+                                        dragPosition = Offset(
+                                            currentPosition.x + (size / 2).toPx(),
+                                            currentPosition.y + nodeHeight.toPx()
+                                        )
+                                        onEdgeDragStart(id, dragPosition, PortType.OUTPUT)
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragPosition += dragAmount
+                                        onEdgeDrag(dragPosition)
+                                    },
+                                    onDragEnd = { onEdgeDragEnd(null, Offset.Zero) }
+                                )
+                            }
+                            .background(
+                                if (isValidOutputDropTarget) Color(0xFF2196F3) else Color.White,
+                                CircleShape
                             )
-                        }
-                        .background(
-                            if (isValidOutputDropTarget) Color(0xFF2196F3) else Color.White,
-                            CircleShape
-                        )
-                        .border(
-                            width = if (isValidOutputDropTarget) 2.dp else 1.5.dp,
-                            color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color(0xFF2196F3),
-                            shape = CircleShape
-                        )
-                )
+                            .border(
+                                width = if (isValidOutputDropTarget) 2.dp else 1.5.dp,
+                                color = if (isValidOutputDropTarget) Color(0xFF0D47A1) else Color(0xFF2196F3),
+                                shape = CircleShape
+                            )
+                    )
+                }
             }
         }
     }

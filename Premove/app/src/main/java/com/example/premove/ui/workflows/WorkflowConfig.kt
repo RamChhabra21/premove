@@ -97,11 +97,9 @@ fun WorkflowConfig(
     var title          by remember(current.id) { mutableStateOf(current.title) }
     var description    by remember(current.id) { mutableStateOf(current.description) }
     var isEnabled      by remember(current.id) { mutableStateOf(current.isEnabled) }
-    var triggerType    by remember(current.id) { mutableStateOf(current.triggerType.toTriggerType()) }
-    var cronExpression by remember(current.id) { mutableStateOf(current.cronExpression) }
-    var webhookSecret  by remember(current.id) { mutableStateOf(current.webhookSecret) }
     var timeoutMinutes by remember(current.id) { mutableIntStateOf(current.timeoutMinutes) }
     var maxRetries     by remember(current.id) { mutableIntStateOf(current.maxRetries) }
+    var autoReset      by remember(current.id) { mutableStateOf(current.autoReset) }
 
     // Save button only lights up when something actually changed
     val isDirty by remember {
@@ -109,11 +107,9 @@ fun WorkflowConfig(
             title.trim()       != current.title          ||
                     description.trim() != current.description    ||
                     isEnabled          != current.isEnabled      ||
-                    triggerType.key    != current.triggerType    ||
-                    cronExpression     != current.cronExpression ||
-                    webhookSecret      != current.webhookSecret  ||
                     timeoutMinutes     != current.timeoutMinutes ||
-                    maxRetries         != current.maxRetries
+                    maxRetries         != current.maxRetries     ||
+                    autoReset          != current.autoReset
         }
     }
 
@@ -192,11 +188,9 @@ fun WorkflowConfig(
                                     title          = title.trim(),
                                     description    = description.trim(),
                                     isEnabled      = isEnabled,
-                                    triggerType    = triggerType.key,
-                                    cronExpression = cronExpression,
-                                    webhookSecret  = webhookSecret,
                                     timeoutMinutes = timeoutMinutes,
                                     maxRetries     = maxRetries,
+                                    autoReset      = autoReset,
                                     updatedAt      = System.currentTimeMillis()
                                 )
                             )
@@ -260,58 +254,7 @@ fun WorkflowConfig(
                     )
                 }
 
-                // ── 2. Trigger ─────────────────────────────────────────────
-                ConfigSection("Trigger", Icons.Outlined.Bolt) {
-                    Text(
-                        "How should this workflow start?",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    TriggerSelector(selected = triggerType, onSelect = { triggerType = it })
-
-                    AnimatedVisibility(
-                        visible = triggerType == TriggerType.SCHEDULED,
-                        enter   = fadeIn() + expandVertically(),
-                        exit    = fadeOut() + shrinkVertically()
-                    ) {
-                        Column {
-                            Spacer(Modifier.height(12.dp))
-                            OutlinedTextField(
-                                value          = cronExpression,
-                                onValueChange  = { cronExpression = it },
-                                label          = { Text("Cron Expression") },
-                                leadingIcon    = { Icon(Icons.Outlined.Schedule, null) },
-                                supportingText = { Text("e.g.  0 9 * * 1-5  → weekdays at 9 AM") },
-                                modifier       = Modifier.fillMaxWidth(),
-                                singleLine     = true,
-                                shape          = RoundedCornerShape(12.dp)
-                            )
-                        }
-                    }
-
-                    AnimatedVisibility(
-                        visible = triggerType == TriggerType.WEBHOOK,
-                        enter   = fadeIn() + expandVertically(),
-                        exit    = fadeOut() + shrinkVertically()
-                    ) {
-                        Column {
-                            Spacer(Modifier.height(12.dp))
-                            OutlinedTextField(
-                                value          = webhookSecret,
-                                onValueChange  = { webhookSecret = it },
-                                label          = { Text("Webhook Secret") },
-                                leadingIcon    = { Icon(Icons.Outlined.Key, null) },
-                                supportingText = { Text("Leave blank to auto-generate on save") },
-                                modifier       = Modifier.fillMaxWidth(),
-                                singleLine     = true,
-                                shape          = RoundedCornerShape(12.dp)
-                            )
-                        }
-                    }
-                }
-
-                // ── 3. Execution ───────────────────────────────────────────
+                // ── 2. Execution ───────────────────────────────────────────
                 ConfigSection("Execution", Icons.Outlined.PlayCircle) {
                     Column {
                         Row(
@@ -376,9 +319,37 @@ fun WorkflowConfig(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+
+                    HorizontalDivider(Modifier.padding(vertical = 10.dp))
+
+                    Row(
+                        modifier              = Modifier.fillMaxWidth(),
+                        verticalAlignment     = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Refresh, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Auto Reset", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            }
+                            Text(
+                                "Start a new run automatically after completion",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = autoReset,
+                            onCheckedChange = { autoReset = it },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
                 }
 
-                // ── 4. Details (read-only) ─────────────────────────────────
+                // ── 3. Details (read-only) ─────────────────────────────────
                 ConfigSection("Details", Icons.Outlined.Summarize) {
                     MetaRow(Icons.Outlined.Tag,           "Workflow ID",   current.id)
                     MetaDivider()
@@ -393,7 +364,7 @@ fun WorkflowConfig(
                     }
                 }
 
-                // ── 5. Run History ─────────────────────────────────────────
+                // ── 4. Run History ─────────────────────────────────────────
                 ConfigSection("Run History", Icons.Outlined.History) {
                     if (recentRuns.isEmpty()) {
                         Row(

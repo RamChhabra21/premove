@@ -35,6 +35,9 @@ data class NodeRunEntity(
     val error: String? = null,
 
     @ColumnInfo
+    val retryCount: Int = 0,
+
+    @ColumnInfo
     val startedAt: Long = System.currentTimeMillis(),
 
     @ColumnInfo

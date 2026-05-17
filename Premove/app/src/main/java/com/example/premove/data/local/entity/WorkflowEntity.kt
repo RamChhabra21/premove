@@ -22,20 +22,16 @@ data class WorkflowEntity(
     val createdBy: Int,
 
     // ── Workflow config ───────────────────────────────────────────────────────
-    @ColumnInfo
-    val triggerType: String = "MANUAL",      // MANUAL | SCHEDULED | WEBHOOK | EVENT
-
-    @ColumnInfo
-    val cronExpression: String = "0 9 * * 1-5",
-
-    @ColumnInfo
-    val webhookSecret: String = "",
-
+    // Triggers are now nodes, so global trigger columns are removed.
+    
     @ColumnInfo
     val timeoutMinutes: Int = 5,
 
     @ColumnInfo
     val maxRetries: Int = 0,
+
+    @ColumnInfo
+    val autoReset: Boolean = false,
 
     @ColumnInfo
     val createdAt: Long = System.currentTimeMillis(),

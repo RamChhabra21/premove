@@ -4,6 +4,8 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.premove.auth.GoogleAuthClient
+import com.example.premove.network.AuthApiService
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 data class AuthState(
@@ -21,7 +24,9 @@ data class AuthState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val googleAuthClient: GoogleAuthClient
+    private val googleAuthClient: GoogleAuthClient,
+    private val authApiService: AuthApiService,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -48,13 +53,31 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
-            googleAuthClient.signIn(activity)
-                .onSuccess { user ->
-                    _state.update { it.copy(user = user, isLoading = false) }
+            val signInResult = googleAuthClient.signIn(activity)
+            
+            signInResult.onSuccess { user ->
+                try {
+                    val token = user.getIdToken(true).await().token
+                    if (token != null) {
+                        authApiService.validateUser(token)
+                            .onSuccess {
+                                _state.update { it.copy(user = user, isLoading = false) }
+                            }
+                            .onFailure { e ->
+                                googleAuthClient.signOut()
+                                _state.update { it.copy(error = "Backend validation failed: ${e.message}", isLoading = false, user = null) }
+                            }
+                    } else {
+                        googleAuthClient.signOut()
+                        _state.update { it.copy(error = "Could not retrieve auth token", isLoading = false, user = null) }
+                    }
+                } catch (e: Exception) {
+                    googleAuthClient.signOut()
+                    _state.update { it.copy(error = "Validation error: ${e.message}", isLoading = false, user = null) }
                 }
-                .onFailure { e ->
-                    _state.update { it.copy(error = e.message, isLoading = false) }
-                }
+            }.onFailure { e ->
+                _state.update { it.copy(error = e.message, isLoading = false) }
+            }
         }
     }
 

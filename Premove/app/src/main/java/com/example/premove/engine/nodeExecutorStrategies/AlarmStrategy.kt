@@ -4,14 +4,14 @@ import android.media.RingtoneManager
 import com.example.premove.PremoveApplication
 import com.example.premove.data.local.entity.NodeEntity
 import com.example.premove.data.local.entity.NodeRunEntity
-import com.example.premove.engine.JobRequest
-import com.example.premove.engine.JobTracker
 import com.example.premove.engine.NodeExecutionResult
 import com.example.premove.engine.NodeExecutionStrategy
 import kotlinx.coroutines.delay
-import org.json.JSONObject
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class AlarmStrategy : NodeExecutionStrategy {
+@Singleton
+class AlarmStrategy @Inject constructor() : NodeExecutionStrategy {
     override suspend fun execute(node: NodeEntity, nodeRunEntity: NodeRunEntity): NodeExecutionResult {
         return try {
             val context = PremoveApplication.appContext

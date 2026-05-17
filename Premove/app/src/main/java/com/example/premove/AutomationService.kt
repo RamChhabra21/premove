@@ -1,18 +1,12 @@
 package com.example.premove
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.premove.data.local.dao.WorkflowDao
-import com.example.premove.data.repository.NodeRepository
-import com.example.premove.data.repository.NodeRunRepository
-import com.example.premove.data.repository.WorkflowRepository
 import com.example.premove.engine.WorkflowEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,48 +37,58 @@ class AutomationService : Service() {
             edgeRepository = entryPoint.edgeRepository(),
             edgeRunRepository = entryPoint.edgeRunRepository(),
             llmClient = entryPoint.llmClient(),
+            jobTracker = entryPoint.jobTracker(),
+            nodeExecutor = entryPoint.nodeExecutor(),
             scope = scope
         )
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(1, buildNotification())
+    override fun onCreate() {
+        super.onCreate()
+        startForegroundService()
+    }
 
+    private fun startForegroundService() {
+        // Using NotificationCompat.PRIORITY_MIN and IMPORTANCE_MIN (in channel) 
+        // to make the notification as unobtrusive as possible.
+        val notification = NotificationCompat.Builder(this, PremoveApplication.CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_menu_info_details)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // If you have a specific type in Manifest (like dataSync), use it here.
+            // Using DATA_SYNC as a placeholder; ensure it matches your AndroidManifest.xml
+            try {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
+            } catch (e: Exception) {
+                // Fallback for cases where type might not match or other errors
+                startForeground(NOTIFICATION_ID, notification)
+            }
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         scope.launch {
             while (isActive) {
-//                Log.d("AutomationService", "✅ Service is alive")
-
-
-
-                // perform actions here
-                // call workflow engine. execute here
-
-                workflowEngine.execute()
+                try {
+                    workflowEngine.execute()
+                } catch (e: Exception) {
+                    Log.e("AutomationService", "Error in engine loop", e)
+                }
                 delay(5000)
             }
         }
 
         return START_STICKY
-    }
-
-    private fun buildNotification(): Notification {
-        val channelId = "automation_channel"
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Automation Service",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            getSystemService(NotificationManager::class.java)
-                .createNotificationChannel(channel)
-        }
-
-        return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("Automation Running")
-            .setContentText("Workflows are being monitored")
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .build()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -93,5 +97,9 @@ class AutomationService : Service() {
         super.onDestroy()
         scope.cancel()
         Log.d("AutomationService", "❌ Service destroyed")
+    }
+
+    companion object {
+        private const val NOTIFICATION_ID = 101
     }
 }
